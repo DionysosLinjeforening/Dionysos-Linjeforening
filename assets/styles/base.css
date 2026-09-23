@@ -1,0 +1,5457 @@
+/* Urd base styles: reset + theme token variables.
+   The :root below is Urd's DEFAULT theme as a safe fallback (single values). The
+   site's OWN colors come from content/theme.css (materialized at publish time, loaded
+   right after this file) and the <style> injected by theme.js; both win. */
+
+:root {
+  --urd-color-bg: #f7f8fb;
+  --urd-color-surface: #ffffff;
+  --urd-color-text: #14161c;
+  --urd-color-accent: #7c5cff;
+  --urd-font-heading: system-ui, sans-serif;
+  --urd-font-body: system-ui, sans-serif;
+  --urd-radius-sm: 6px;
+  --urd-radius-md: 12px;
+  --urd-space-section: clamp(3rem, 8vw, 6rem);
+}
+
+/* The default theme follows OS lightness where light-dark() is supported (Baseline 2024),
+   which keeps the first paint from flashing a palette the site does not use. color-scheme
+   makes browser chrome (scrollbar, form fields) match; a manual choice overrides
+   via data-urd-theme (set by theme-init.js before paint). The site's own theme.css wins. */
+@supports (color: light-dark(#000, #fff)) {
+  :root {
+    color-scheme: light dark;
+    --urd-color-bg: light-dark(#f7f8fb, #0b0e14);
+    --urd-color-surface: light-dark(#ffffff, #151a23);
+    --urd-color-text: light-dark(#14161c, #e8eaf0);
+  }
+  :root[data-urd-theme="light"] { color-scheme: light; }
+  :root[data-urd-theme="dark"] { color-scheme: dark; }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* The canvas background (behind body): on displays with fractional scaling 100vh
+     rounds off and leaves a sub-pixel strip at the bottom where this layer shows. With
+     surface the strip matches the footer and the panels, so it does not read as a dark line. */
+  background: var(--urd-color-surface);
+}
+
+body {
+  background: var(--urd-color-bg);
+  color: var(--urd-color-text);
+  font-family: var(--urd-font-body);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--urd-font-heading);
+  line-height: 1.15;
+}
+
+img, video {
+  max-width: 100%;
+  display: block;
+}
+
+/* Section container: the positioning context for block frames.
+   NEVER clips content: blocks may deliberately overhang the section boundary,
+   and the editor and the published page must look identical.
+   The content box carries the design height (the inline min-height render.js
+   writes is a plain length, part of the compatibility surface plugin copies
+   read and overwrite, see SCHEMA.md), and the padding carries the nav
+   clearance (--urd-section-clear, set only on the first section under a
+   menu outside the flow), so the surface keeps its height and the background
+   fills all the way up behind the menu. */
+.urd-section {
+  position: relative;
+  box-sizing: content-box;
+  padding-top: var(--urd-section-clear, 0px);
+  --urd-canvas-gutter: 0px;
+}
+
+/* The content surface (ADR-0018): the section is full window width and owns the
+   background, while the canvas binds the content to the design width and centers it.
+   Block x/w are percentages OF THIS, so the layout stops growing with the
+   screen. The gutter applies only above the mobile breakpoint, so every stored
+   frames.mobile keeps its meaning (the mobile model is its own milestone).
+
+   WARNING: this rule must NEVER get transform, filter, perspective,
+   backdrop-filter, contain, container-type or will-change. All seven
+   create a containing block for position: fixed, and would break pinned and
+   viewport-docked blocks (sticky.js). Enforced by tests/canvas.test.mjs. */
+body:not(.urd-mobile) .urd-section {
+  --urd-canvas-gutter: var(--urd-canvas-gutter-desktop, 24px);
+}
+
+.urd-canvas {
+  /* ABSOLUTE, not in flow: the section toolbar in the editor is sticky and
+     therefore an in-flow element, and the section's ONLY one. With the canvas in
+     flow, the section would grow by the toolbar height every time the pointer hit
+     it, and shrink again when it left. Absolute placement keeps the
+     invariant. Safe for pinned blocks: only transform, filter and
+     containment create a containing block for fixed, not position.
+     The nav clearance is the section's padding (see .urd-section); the
+     canvas starts below it. */
+  position: absolute;
+  inset: 0;
+  top: var(--urd-section-clear, 0px);
+  width: min(100% - 2 * var(--urd-canvas-gutter), var(--urd-canvas-w, 100%));
+  margin-inline: auto;
+}
+
+/* Mobile auto layout is real document flow, and there the canvas MUST be in flow:
+   the section height is `auto` and driven by .urd-flow inside. The nav clearance
+   is the section's padding on both viewports. */
+body.urd-mobile .urd-canvas {
+  position: relative;
+  inset: auto;
+  min-height: inherit;
+}
+
+/* Nav clearance: a floating or overlay menu sits outside the flow and would
+   otherwise cover the content at the top of the page. The first section gets the
+   clearance variable set to the measured menu height (--urd-nav-h is written by nav.js);
+   the canvas rules above translate it. Menus in flow (sticky/column) need no clearance. */
+#urd-nav.urd-nav-float + #urd-root > .urd-section:first-of-type,
+#urd-nav.urd-nav-overlay + #urd-root > .urd-section:first-of-type {
+  --urd-section-clear: var(--urd-nav-h, 0px);
+}
+
+/* Rotated and overhanging blocks must not cause horizontal scrolling */
+html {
+  overflow-x: clip;
+}
+
+/* The background layer fills the section and sits behind the blocks */
+.urd-bg-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Layered background for nav and footer (shared with sections): a backdrop
+   container behind the content. z-index -1 puts the layers behind the nav/footer content
+   but in front of the element's own surface; overflow clips image layers to the
+   (rounded) edges. The host (.urd-nav / .urd-footer) is a stacking context. */
+.urd-nav-bg,
+.urd-footer-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Slim scrollbar in the theme colors (matches the editor's, and looks better
+   than the browser default on dark pages) */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--urd-color-text) 25%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--urd-color-text) 25%, transparent);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Blocks are positioned absolutely by render.js (frameToCss) */
+.urd-block {
+  position: absolute;
+}
+
+/* The mobile row grid (ADR-0019): one column of 8 px rows that grow with
+   the content (minmax). Untouched blocks are auto-placed in reading order
+   (sparse: they always jump BELOW pinned bands, never into gaps above),
+   pinned blocks get explicit row tracks from render.js. No gap:
+   the row tracks are the coordinate system, so the air between flow blocks lives in
+   margin-bottom and is covered by the row span. The row height 8 mirrors MOBILE_ROW in
+   migrate.js. */
+.urd-flow {
+  position: relative;
+  display: grid;
+  grid-template-columns: 100%;
+  grid-auto-rows: minmax(8px, auto);
+  grid-auto-flow: row;
+  padding: 24px 0;
+}
+
+/* Flow block: 90 % width, centered; render.js
+   overrides width and margin for partial placements. position: relative
+   (with no offsets) takes part in the grid as static, and at the same time anchors
+   the editing layer's absolute children (toolbar, resize handles,
+   pin marker) to the BLOCK rather than to the flow surface. */
+.urd-block-flow {
+  position: relative;
+  width: 90%;
+  justify-self: center;
+  margin-bottom: 16px;
+}
+
+/* Pinned block: row track and width are set by render.js. No margin: a margin
+   outside the tracks would inflate the rows and shift the coordinate system. */
+.urd-block-pinned {
+  position: relative;
+  margin: 0;
+}
+
+/* Content inside text blocks: lists, quotes and links from
+   the formatting bar (the global reset otherwise zeroes list indentation) */
+.urd-text ul,
+.urd-text ol {
+  padding-left: 1.3em;
+}
+
+.urd-text blockquote {
+  border-left: 3px solid var(--urd-color-accent);
+  padding-left: 0.8em;
+  opacity: 0.9;
+}
+
+.urd-text a {
+  color: var(--urd-color-accent);
+}
+
+/* Text box: a text block with its content in a card (props.box on the text block).
+   Follows the theme's surface color and radius. */
+.urd-text-box {
+  box-sizing: border-box;
+  background: var(--urd-color-surface);
+  /* The theme's thin border: visible enough to read as an edge.
+     "Custom color" in the card style overrides it. */
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 22%, transparent);
+  border-radius: var(--urd-radius-md);
+  padding: 1rem 1.25rem;
+}
+
+/* The FAQ accordion: question cards (sharing the .urd-text-box base style) where
+   the answer unfolds with the ::details-content height transition below. */
+.urd-faq {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Each question is a native <details>. */
+.urd-faq-item {
+  padding: 0.75rem 1.25rem;
+}
+
+/* <summary>: hide the default triangle (flex removes it in Chromium; list-style
+   and the webkit marker cover the rest). */
+.urd-faq-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.urd-faq-head::-webkit-details-marker {
+  display: none;
+}
+
+.urd-faq-q {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.urd-faq-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--urd-color-text);
+}
+
+.urd-faq-toggle svg {
+  transition: transform 0.25s ease;
+}
+
+.urd-faq-item[open] .urd-faq-toggle svg {
+  transform: rotate(180deg);
+}
+
+.urd-faq-a > .urd-text {
+  padding-top: 0.5rem;
+}
+
+/* Soft unfolding where the browser supports ::details-content + interpolate-size
+   (Chromium early 2026): the answer slides open and closed in height. Without support
+   native <details> reveals the answer instantly. The content-visibility transition
+   (allow-discrete) keeps the content visible through the collapse. */
+@supports (interpolate-size: allow-keywords) {
+  .urd-faq {
+    interpolate-size: allow-keywords;
+  }
+
+  .urd-faq-item::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition: block-size 0.25s ease, content-visibility 0.25s allow-discrete;
+  }
+
+  .urd-faq-item[open]::details-content {
+    block-size: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urd-faq-toggle svg {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @supports (interpolate-size: allow-keywords) {
+    .urd-faq-item::details-content {
+      transition: none;
+    }
+  }
+}
+
+/* The timeline: events along a drawn line, pure CSS. The accent
+   follows the theme, but can be overridden per block (--urd-timeline-accent). */
+.urd-timeline {
+  --urd-timeline-line: var(--urd-timeline-accent, var(--urd-color-accent));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  position: relative;
+}
+
+/* The left variant: the line along the left edge, the content indented. */
+.urd-timeline-left {
+  padding-left: 1.6rem;
+}
+
+.urd-timeline-left::before {
+  content: '';
+  position: absolute;
+  left: 0.45rem;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--urd-timeline-line);
+  opacity: 0.55;
+}
+
+.urd-timeline-item {
+  position: relative;
+}
+
+.urd-timeline-left .urd-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -1.47rem;
+  top: 0.3rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: var(--urd-timeline-line);
+  border: 2px solid var(--urd-timeline-line);
+}
+
+/* The ring marker: an open circle on the line instead of a filled dot. */
+.urd-timeline-ring .urd-timeline-item::before {
+  background: var(--urd-color-bg);
+}
+
+/* The alternating variant: the line down the middle, cards on alternating sides. */
+.urd-timeline-alternating::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0.4rem;
+  bottom: 0.4rem;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--urd-timeline-line);
+  opacity: 0.55;
+  transform: translateX(-50%);
+}
+
+.urd-timeline-alternating .urd-timeline-item {
+  width: 46%;
+  background: color-mix(in srgb, var(--urd-color-surface) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 12%, transparent);
+  border-radius: var(--urd-radius-sm);
+  padding: 0.55rem 0.8rem;
+}
+
+.urd-timeline-alternating .urd-timeline-item:nth-child(even) {
+  align-self: flex-end;
+}
+
+.urd-timeline-alternating .urd-timeline-item::before {
+  content: '';
+  position: absolute;
+  top: 0.75rem;
+  right: calc(-4.35% - 0.31rem);
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 999px;
+  background: var(--urd-timeline-line);
+  border: 2px solid var(--urd-timeline-line);
+}
+
+.urd-timeline-alternating .urd-timeline-item:nth-child(even)::before {
+  right: auto;
+  left: calc(-4.35% - 0.31rem);
+}
+
+.urd-timeline-year {
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--urd-timeline-line);
+}
+
+.urd-timeline-title {
+  font-weight: 650;
+  font-family: var(--urd-font-heading);
+}
+
+.urd-timeline-text {
+  font-size: 0.92em;
+  opacity: 0.8;
+}
+
+/* The quote: a semantic figure/blockquote. The glyph is drawn in ::before. */
+.urd-quote {
+  --urd-quote-glyph: var(--urd-quote-accent, var(--urd-color-accent));
+  margin: 0;
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.urd-quote blockquote {
+  margin: 0;
+  font-style: italic;
+}
+
+.urd-quote-large {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.urd-quote-large .urd-quote-text {
+  font-size: 1.35em;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.urd-quote-large::before {
+  content: '\201C';
+  font-family: Georgia, serif;
+  font-size: 3em;
+  line-height: 0.55;
+  color: var(--urd-quote-glyph);
+}
+
+.urd-quote-short {
+  background: color-mix(in srgb, var(--urd-color-surface) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 12%, transparent);
+  border-radius: var(--urd-radius-md);
+  padding: 1rem 1.2rem;
+}
+
+.urd-quote-short .urd-quote-text {
+  font-size: 0.98em;
+}
+
+.urd-quote-portrait {
+  width: 3rem;
+  height: 3rem;
+  flex: none;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid var(--urd-quote-glyph);
+}
+
+.urd-quote-caption {
+  margin-top: 0.55rem;
+  font-size: 0.82em;
+  display: flex;
+  gap: 0.45em;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.urd-quote-large .urd-quote-caption {
+  justify-content: center;
+}
+
+.urd-quote-name {
+  font-weight: 650;
+  font-style: normal;
+}
+
+.urd-quote-role {
+  opacity: 0.65;
+  font-style: normal;
+}
+
+/* The stat: one key figure with a label. Tabular nums so
+   the count-up animation does not jump in width along the way. */
+.urd-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+
+.urd-stat-number {
+  font-family: var(--urd-font-heading);
+  font-size: 2.1em;
+  font-weight: 750;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 0.06em;
+}
+
+.urd-stat-number > span:first-child,
+.urd-stat-number > span:last-child {
+  color: var(--urd-color-accent);
+}
+
+.urd-stat-value {
+  color: var(--urd-color-text);
+}
+
+.urd-stat-label {
+  font-size: 0.74em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* The table: a semantic table in an overflow wrapper, so wide
+   tables scroll in their own surface instead of breaking the page layout. */
+.urd-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.urd-table-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.urd-table-table th,
+.urd-table-table td {
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.urd-table-table th {
+  font-weight: 650;
+  border-bottom: 2px solid color-mix(in srgb, var(--urd-color-text) 35%, transparent);
+}
+
+.urd-table-lines-rows td {
+  border-bottom: 1px solid color-mix(in srgb, var(--urd-color-text) 15%, transparent);
+}
+
+.urd-table-lines-grid th,
+.urd-table-lines-grid td {
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 18%, transparent);
+}
+
+.urd-table-striped tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--urd-color-text) 6%, transparent);
+}
+
+/* Empty cells keep a click target while editing. */
+.urd-preview .urd-table-table [contenteditable]:empty::after {
+  content: '\00a0';
+}
+
+/* Share buttons: plain links with drawn icons, no tracking. */
+.urd-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.urd-share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: var(--urd-share-size, 38px);
+  height: var(--urd-share-size, 38px);
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: var(--urd-color-bg);
+  background: var(--urd-share-color, var(--urd-color-accent));
+  text-decoration: none;
+  font: inherit;
+}
+
+.urd-share-button:hover {
+  filter: brightness(1.12);
+}
+
+.urd-share-icon {
+  display: block;
+  width: 55%;
+  height: 55%;
+}
+
+/* Icons only by default; the name variant turns the buttons into pills. */
+.urd-share-name {
+  display: none;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.urd-share-labels .urd-share-button {
+  width: auto;
+  border-radius: 999px;
+  padding: 0 calc(var(--urd-share-size, 38px) * 0.35);
+}
+
+.urd-share-labels .urd-share-icon {
+  width: calc(var(--urd-share-size, 38px) * 0.5);
+  height: calc(var(--urd-share-size, 38px) * 0.5);
+}
+
+.urd-share-labels .urd-share-name {
+  display: inline;
+}
+
+/* The countdown: unit boxes with tabular nums, so the ticking never
+   jumps in width. */
+.urd-countdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.urd-countdown-unit {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: 64px;
+  padding: 10px 12px;
+  border-radius: var(--urd-radius-md, 12px);
+  background: color-mix(in srgb, var(--urd-color-text) 7%, transparent);
+}
+
+.urd-countdown-plain .urd-countdown-unit {
+  background: none;
+  padding: 4px 6px;
+  min-width: 48px;
+}
+
+.urd-countdown-number {
+  font-family: var(--urd-font-heading);
+  font-size: 1.9em;
+  font-weight: 750;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--urd-color-accent);
+}
+
+.urd-countdown-name {
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.urd-countdown-done {
+  font-family: var(--urd-font-heading);
+  font-size: 1.3em;
+  font-weight: 650;
+}
+
+/* The audio block: a native player with an optional title above. */
+.urd-audio {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.urd-audio audio {
+  width: 100%;
+  /* The player chrome follows the user's OS theme, like the date picker in the form. */
+  color-scheme: light dark;
+}
+
+.urd-audio-title {
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.urd-preview .urd-audio-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-height: 54px;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 35%, transparent);
+  border-radius: var(--urd-radius-sm, 6px);
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+/* The shop: product cards from a product collection. The card list is a
+   responsive grid; the block can lock the column count in Style. */
+.urd-product-cardlist {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.urd-product-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--urd-color-surface);
+  /* A thin border, so the card reads even where surface is nearly the background color. */
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 14%, transparent);
+  border-radius: var(--urd-radius-md, 10px);
+}
+
+.urd-product-image {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--urd-radius-sm, 6px);
+}
+
+.urd-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The secondary image (the first color image) fades in on hover; an active
+   color choice with an image of its own wins over the hover swap. */
+.urd-product-image .urd-product-image-alt {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.urd-product-card:hover .urd-product-image:not(.urd-product-color-selected) .urd-product-image-alt {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .urd-product-image .urd-product-image-alt {
+    display: none;
+  }
+}
+
+.urd-product-badge {
+  align-self: flex-start;
+  padding: 3px 9px;
+  background: var(--urd-color-accent);
+  color: var(--urd-color-bg);
+  border-radius: 999px;
+  font-size: 0.72em;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+/* With an image the badge is placed over the image's top left corner; without an
+   image it sits as a static chip above the title (never on top of text). */
+.urd-product-badge-over {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+}
+
+.urd-product-title {
+  font-family: var(--urd-font-heading);
+  font-size: 1.05em;
+}
+
+.urd-product-text {
+  font-size: 0.88em;
+  opacity: 0.85;
+}
+
+.urd-product-price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.urd-product-member {
+  font-size: 0.82em;
+  opacity: 0.75;
+}
+
+.urd-product-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.urd-product-chip {
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 30%, transparent);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+
+.urd-product-chip[aria-pressed="true"] {
+  border-color: var(--urd-color-accent);
+  background: color-mix(in srgb, var(--urd-color-accent) 16%, transparent);
+}
+
+.urd-product-buy {
+  margin-top: auto;
+  padding: 9px 14px;
+  border: none;
+  border-radius: var(--urd-radius-sm, 6px);
+  background: var(--urd-color-accent);
+  color: var(--urd-color-bg);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.urd-product-added {
+  opacity: 0.85;
+}
+
+/* The "+ Product" adder (editor only): a dashed card last in the grid. */
+.urd-preview .urd-product-adder {
+  min-height: 180px;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 35%, transparent);
+  border-radius: var(--urd-radius-md, 10px);
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+/* Quick view (visitors only): the product details in a native <dialog>.
+   display is set ONLY in the open state, otherwise the built-in
+   dialog:not([open]) { display: none } would be overridden. */
+.urd-product-opener {
+  cursor: pointer;
+}
+
+.urd-product-dialog {
+  width: min(720px, 94vw);
+  max-height: 90dvh;
+  border: none;
+  padding: 22px;
+  background: var(--urd-color-bg);
+  color: var(--urd-color-text);
+  border-radius: var(--urd-radius-md, 10px);
+  box-shadow: 0 18px 60px rgb(0 0 0 / 0.35);
+}
+
+.urd-product-dialog::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.urd-product-dialog[open] .urd-product-dialogbody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 640px) {
+  .urd-product-dialog[open] .urd-product-dialogbody {
+    grid-template-columns: 1fr;
+  }
+}
+
+.urd-product-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 5px;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.urd-product-close svg {
+  width: 100%;
+  height: 100%;
+}
+
+.urd-product-gallery {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.urd-product-gallery > img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: var(--urd-radius-sm, 6px);
+}
+
+.urd-product-thumbs {
+  display: flex;
+  gap: 6px;
+}
+
+.urd-product-thumbs img {
+  width: 52px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: var(--urd-radius-sm, 6px);
+  cursor: pointer;
+}
+
+.urd-product-dialoginfo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: start;
+}
+
+.urd-product-dialoginfo .urd-product-title {
+  font-size: 1.3em;
+}
+
+.urd-product-dialoginfo .urd-product-buy {
+  margin-top: 8px;
+}
+
+/* The cart: a button with a count badge; the drawer is a native <dialog>
+   anchored to the right edge (ADR-0011). */
+.urd-cart-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 25%, transparent);
+  border-radius: 999px;
+  background: var(--urd-color-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.urd-cart-iconbutton {
+  padding: 9px;
+}
+
+.urd-cart-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+}
+
+.urd-cart-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.urd-cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  background: var(--urd-color-accent);
+  color: var(--urd-color-bg);
+  border-radius: 999px;
+  font-size: 0.68em;
+  font-weight: 700;
+}
+
+.urd-cart-dialog {
+  /* A drawer along the right edge: the dialog's default centering is overridden. */
+  margin: 0 0 0 auto;
+  width: min(380px, 92vw);
+  height: 100dvh;
+  max-height: 100dvh;
+  border: none;
+  padding: 18px;
+  background: var(--urd-color-bg);
+  color: var(--urd-color-text);
+  box-shadow: -12px 0 40px rgb(0 0 0 / 0.25);
+}
+
+/* display is set ONLY in the open state: a display value on the dialog itself
+   would override the browser's dialog:not([open]) { display: none } and
+   show the drawer permanently. */
+.urd-cart-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.urd-cart-dialog::backdrop {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.urd-cart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.urd-cart-close,
+.urd-cart-remove {
+  width: 26px;
+  height: 26px;
+  padding: 4px;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.urd-cart-close svg,
+.urd-cart-remove svg {
+  width: 100%;
+  height: 100%;
+}
+
+.urd-cart-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.urd-cart-empty {
+  opacity: 0.7;
+}
+
+.urd-cart-lines {
+  display: grid;
+  gap: 10px;
+}
+
+.urd-cart-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--urd-color-text) 15%, transparent);
+}
+
+.urd-cart-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: var(--urd-radius-sm, 6px);
+}
+
+.urd-cart-info {
+  display: grid;
+  font-size: 0.88em;
+}
+
+.urd-cart-variant {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.urd-cart-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.urd-cart-step {
+  width: 22px;
+  height: 22px;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 25%, transparent);
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.urd-cart-number {
+  min-width: 18px;
+  text-align: center;
+  font-size: 0.88em;
+  font-variant-numeric: tabular-nums;
+}
+
+.urd-cart-linetotal {
+  font-size: 0.88em;
+  font-variant-numeric: tabular-nums;
+}
+
+.urd-cart-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.05em;
+}
+
+.urd-cart-checkout {
+  display: block;
+  padding: 11px 14px;
+  background: var(--urd-color-accent);
+  color: var(--urd-color-bg);
+  border-radius: var(--urd-radius-sm, 6px);
+  text-align: center;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Checkout: order summary + order form (mailto/endpoint, ADR-0006). */
+.urd-checkout {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.urd-checkout-lines {
+  margin: 0;
+  padding: 0 0 0 1.2em;
+  display: grid;
+  gap: 4px;
+  font-size: 0.9em;
+}
+
+.urd-checkout-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--urd-color-text) 20%, transparent);
+}
+
+.urd-checkout-empty {
+  margin: 0;
+  opacity: 0.7;
+}
+
+.urd-checkout-form {
+  display: grid;
+  gap: 10px;
+}
+
+.urd-checkout-field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85em;
+}
+
+.urd-checkout-input {
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 25%, transparent);
+  border-radius: var(--urd-radius-sm, 6px);
+  background: var(--urd-color-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 0.95em;
+}
+
+/* Honeypot: moved out of view, never display:none (bots check for that). */
+.urd-checkout-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.urd-checkout-vipps {
+  margin: 0;
+  font-size: 0.88em;
+  opacity: 0.85;
+}
+
+.urd-checkout-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Pay with Vipps (ADR-0020): the brand color, independent of the theme. */
+.urd-checkout-vippspay {
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--urd-radius-sm, 6px);
+  background: #ff5b24;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.urd-checkout-vippspay:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.urd-checkout-send {
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--urd-radius-sm, 6px);
+  background: var(--urd-color-accent);
+  color: var(--urd-color-bg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.urd-checkout-status {
+  margin: 0;
+  font-size: 0.88em;
+}
+
+.urd-checkout-error {
+  color: #c0392b;
+}
+
+/* The formatting bar for text fields (preview mode only): shown above
+   the block for as long as the field is being edited. Two fixed rows (Office style)
+   stack in a column; the expandable sub-rows sit below them. */
+.urd-text-toolbar {
+  /* Counter-scaling (urd-zoom): the anchor is set by JS in viewport
+     coordinates, so the origin has to be that corner. */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: top left;
+  position: fixed;
+  z-index: 100002;
+  display: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  max-width: min(760px, calc(100vw - 16px));
+  padding: 4px 6px;
+  background: #151a23;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+/* Each fixed row: button groups that wrap when space is tight. */
+.urd-tt-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.urd-tt-row + .urd-tt-row {
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+/* Groups wrap AS A UNIT (never a lone button on its own line), with a divider between */
+.urd-tt-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.urd-tt-group + .urd-tt-group {
+  border-left: 1px solid rgb(255 255 255 / 18%);
+  padding-left: 6px;
+  margin-left: 2px;
+}
+
+/* The size field: a narrow, centered number between minus and plus. The built-in
+   up/down arrows are hidden (− / + do the job); the field can still be typed in. */
+.urd-tt-size {
+  width: 3.2em;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.urd-tt-size::-webkit-outer-spin-button,
+.urd-tt-size::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* The superscript/subscript buttons: an A with a small 2. */
+.urd-tt-supsub {
+  font: 600 12px/1 system-ui, sans-serif;
+}
+
+.urd-text-toolbar sup {
+  font-size: 8px;
+}
+
+/* Active format button: the caret sits inside that format (bold, alignment, lists ...).
+   A neutral highlight (independent of the site theme), clear against the dark bar. */
+.urd-text-toolbar button.active {
+  background: rgb(120 160 255 / 34%);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(120 160 255 / 55%);
+}
+
+.urd-text-toolbar button.active:hover {
+  background: rgb(120 160 255 / 44%);
+}
+
+/* The line-height buttons in the spacing row. */
+.urd-text-toolbar .urd-tt-lh {
+  min-width: 0;
+  padding: 0 6px;
+  font: 12px/1 system-ui, sans-serif;
+}
+
+
+/* Inline link field (its own sub-row in the bar while the link button is active) */
+.urd-tt-linkrow {
+  display: none;
+  gap: 4px;
+  align-items: center;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.urd-tt-linkrow.visible {
+  display: flex;
+}
+
+/* The color row (the dropdown behind the palette icon): its own sub-row, like the link field */
+.urd-tt-colorrow {
+  display: none;
+  gap: 2px;
+  align-items: center;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.urd-tt-colorrow.visible {
+  display: flex;
+}
+
+/* The spacing row (behind the spacing button): line-height presets + letter spacing */
+.urd-tt-spacerow {
+  display: none;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.urd-tt-spacerow.visible {
+  display: flex;
+}
+
+.urd-tt-typolabel {
+  font: 600 10px/1.2 system-ui, sans-serif;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(232 234 240 / 60%);
+}
+
+/* The number fields (size, letter spacing); an empty field means inherit from the theme */
+.urd-tt-num {
+  width: 4em;
+  font: 12px/1.3 system-ui, sans-serif;
+  color: #e8eaf0;
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+  padding: 3px 4px;
+}
+
+/* The glyph row (the dropdown behind the smiley button): a scrollable grid of
+   characters and emoji, the same selection as the icon block's glyph picker */
+.urd-tt-glyphrow {
+  display: none;
+  flex-basis: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-top: 4px;
+  margin-top: 2px;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.urd-tt-glyphrow.visible {
+  display: block;
+}
+
+.urd-tt-glyphhead {
+  font: 600 10px/1.2 system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(232 234 240 / 60%);
+  padding: 6px 2px 3px;
+}
+
+.urd-tt-glyphgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+  gap: 2px;
+}
+
+.urd-text-toolbar .urd-tt-glyphgrid button {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* "Custom text color": an A with a rainbow underline */
+.urd-text-toolbar .urd-tt-acolor {
+  display: inline-block;
+  padding: 1px 3px 2px;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(to right, #e05252, #e2b84a, #4ac26b, #4a90e2, #a45ce2) 1;
+}
+
+.urd-tt-linkrow input {
+  flex: 1;
+  font: 12px/1.3 system-ui, sans-serif;
+  color: #e8eaf0;
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+  padding: 4px 6px;
+  min-width: 0;
+}
+
+.urd-tt-linkrow button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: 11px;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+}
+
+.urd-text-toolbar.visible {
+  display: flex;
+}
+
+.urd-text-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  font: 600 12px/1 system-ui, sans-serif;
+  color: #e8eaf0;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 5px;
+  cursor: pointer;
+}
+
+.urd-text-toolbar button:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+.urd-tt-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: rgb(255 255 255 / 18%);
+}
+
+.urd-tt-level {
+  font: 12px/1.2 system-ui, sans-serif;
+  color: #e8eaf0;
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+  padding: 4px 6px;
+  color-scheme: dark;
+}
+
+.urd-tt-color {
+  width: 22px;
+  height: 22px;
+  padding: 1px;
+  background: transparent;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.urd-text-toolbar .urd-text-swatch {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 30%);
+}
+
+/* Alignment icons: three bars with different alignment */
+.urd-ticon {
+  display: grid;
+  gap: 3px;
+  width: 14px;
+}
+
+.urd-ticon i {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.urd-ticon-left i:nth-child(2),
+.urd-ticon-right i:nth-child(2) {
+  width: 60%;
+}
+
+.urd-ticon-right i:nth-child(2) {
+  justify-self: end;
+}
+
+.urd-ticon-center i:nth-child(2) {
+  width: 60%;
+  justify-self: center;
+}
+
+/* List icons: a bullet or number plus a bar per row */
+.urd-licon {
+  display: grid;
+  gap: 3px;
+  width: 14px;
+}
+
+.urd-licon i {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 4px;
+  font-style: normal;
+  font-size: 4px;
+  line-height: 1;
+}
+
+.urd-licon i::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.urd-licon-ol i::before {
+  content: none;
+}
+
+.urd-licon i::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+}
+
+.urd-text-toolbar sub {
+  font-size: 8px;
+}
+
+/* The highlight button: an A on an accent-colored marker background; the free variant is outlined */
+.urd-text-toolbar .urd-tt-hl {
+  display: inline-block;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--urd-color-accent);
+  color: var(--urd-color-accent-text, #fff);
+}
+
+.urd-text-toolbar .urd-tt-hl-free {
+  background: transparent;
+  color: #e8eaf0;
+  border: 1px dashed rgb(255 255 255 / 45%);
+}
+
+/* "Remove highlight": an A chip with a red diagonal stroke across it */
+.urd-text-toolbar .urd-tt-hl-none {
+  background: linear-gradient(to top right, transparent 44%, #e05252 44% 56%, transparent 56%);
+  color: #e8eaf0;
+  border: 1px solid rgb(255 255 255 / 30%);
+}
+
+body.urd-chrome-off .urd-text-toolbar {
+  display: none !important;
+}
+
+/* The shared color picker (color-picker.js): a floating card in preview mode */
+.urd-cp {
+  position: fixed;
+  z-index: 100003;
+  width: 236px;
+  display: grid;
+  /* Bind the column to the box width: without this the implicit grid column
+     becomes max-content wide (the RGB fields) and the content spills out of the box. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px;
+  background: #151a23;
+  color: #e8eaf0;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 55%);
+  font: 12px/1.4 system-ui, sans-serif;
+}
+
+.urd-cp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.urd-cp-close {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.urd-cp-close:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+.urd-cp-area {
+  position: relative;
+  height: 120px;
+  border-radius: 8px;
+  background-image: linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, transparent);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.urd-cp-cursor {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 55%);
+  pointer-events: none;
+}
+
+.urd-cp-hue {
+  width: 100%;
+  height: 12px;
+  appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+}
+
+.urd-cp-hue::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+
+.urd-cp-hue::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+
+/* The alpha slider: checkerboard + color gradient are set inline (they follow the color) */
+.urd-cp-alpha {
+  width: 100%;
+  height: 12px;
+  appearance: none;
+  border-radius: 999px;
+}
+
+.urd-cp-alpha::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+
+.urd-cp-alpha::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+
+.urd-cp-fields {
+  display: flex;
+  gap: 4px;
+}
+
+.urd-cp-fields input {
+  font: 11px/1.3 ui-monospace, monospace;
+  color: inherit;
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+  padding: 4px 5px;
+  min-width: 0;
+}
+
+.urd-cp-hex {
+  flex: 1.6;
+}
+
+.urd-cp-fields input[type='number'] {
+  flex: 1;
+  appearance: textfield;
+}
+
+.urd-cp-eye {
+  flex: 0 0 auto;
+  color: inherit;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+  padding: 0 7px;
+  cursor: pointer;
+}
+
+.urd-cp-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.urd-cp-tokens {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.urd-cp-token {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 35%);
+  cursor: pointer;
+  padding: 0;
+}
+
+.urd-cp-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.urd-cp-add {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: inherit;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.urd-cp-add:hover {
+  background: rgb(255 255 255 / 15%);
+}
+
+.urd-cp-saved {
+  position: relative;
+  display: inline-flex;
+}
+
+.urd-cp-del {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 13px;
+  height: 13px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e05252;
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.urd-cp-saved:hover .urd-cp-del {
+  display: flex;
+}
+
+body.urd-chrome-off .urd-cp {
+  display: none !important;
+}
+
+/* The help chip (ADR-0008) styles itself: engine/hint.js injects its own
+   style tag, so the chip can never end up unstyled with an outdated base.css. */
+
+/* The shared image editor (image-editor.js): a floating panel in preview mode */
+.urd-imged {
+  position: fixed;
+  z-index: 100002;
+  width: 260px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: #151a23;
+  color: #e8eaf0;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 10px;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 55%);
+  font: 13px/1.4 system-ui, sans-serif;
+}
+
+.urd-imged-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.urd-imged-close {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 7px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.urd-imged-close:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+.urd-imged-thumb {
+  position: relative;
+  height: 130px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgb(255 255 255 / 6%);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.urd-imged-thumb-empty::after {
+  content: attr(data-empty);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.urd-imged-dot {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgb(0 0 0 / 35%);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+  pointer-events: none;
+}
+
+.urd-imged-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.urd-imged-hint {
+  font-size: 10.5px;
+  line-height: 1.35;
+  opacity: 0.62;
+}
+
+/* Rule-of-thirds grid (as in cameras): over the image on the canvas while the editor
+   is open, and in the panel thumbnail. Faint lines at the thirds. */
+.urd-imged-grid,
+.urd-imged-thumbgrid {
+  background-image:
+    linear-gradient(to right, transparent calc(33.33% - 1px), rgb(255 255 255 / 40%) 0 33.33%, transparent 0 calc(66.67% - 1px), rgb(255 255 255 / 40%) 0 66.67%, transparent 0),
+    linear-gradient(to bottom, transparent calc(33.33% - 1px), rgb(255 255 255 / 40%) 0 33.33%, transparent 0 calc(66.67% - 1px), rgb(255 255 255 / 40%) 0 66.67%, transparent 0);
+}
+
+.urd-imged-grid {
+  position: fixed;
+  z-index: 100001;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.urd-imged-thumbgrid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+body.urd-chrome-off .urd-imged-grid {
+  display: none !important;
+}
+
+.urd-imged-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.urd-imged-btn {
+  flex: 1;
+  font: inherit;
+  color: inherit;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.urd-imged-btn:hover {
+  background: rgb(255 255 255 / 15%);
+}
+
+.urd-imged-danger {
+  flex: 0 0 auto;
+  border-color: color-mix(in srgb, #e05252 60%, transparent);
+}
+
+.urd-imged-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.urd-imged-row input[type='range'] {
+  width: 100%;
+  accent-color: #7c5cff;
+}
+
+.urd-imged-slider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.urd-imged-value {
+  flex: 0 0 auto;
+  width: 30px;
+  text-align: right;
+  font: 10px/1 ui-monospace, monospace;
+  opacity: 0.7;
+}
+
+.urd-imged-row input:not([type='range']) {
+  font: inherit;
+  color: inherit;
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 6px;
+  padding: 4px 6px;
+  min-width: 0;
+  color-scheme: dark;
+}
+
+/* Segmented choices (Fit/Rounding): a styled replacement for a native select */
+.urd-imged-seg {
+  display: flex;
+  padding: 2px;
+  background: rgb(255 255 255 / 6%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 6px;
+}
+
+.urd-imged-seg button {
+  flex: 1;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: 11px/1.2 system-ui, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.urd-imged-seg button:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.urd-imged-seg button.selected {
+  background: #7c5cff;
+  color: #fff;
+}
+
+body.urd-chrome-off .urd-imged {
+  display: none !important;
+}
+
+/* Animations (Urd.animations). Entrance animations start invisible and
+   slide in when .urd-anim-in is set (IntersectionObserver in animations/
+   core.js). Duration and delay are set as CSS variables per element.
+   Blocks with rotation carry an inline transform that wins: there only the
+   opacity part plays, deliberately. */
+.urd-anim-fade-in,
+.urd-anim-slide-up,
+.urd-anim-zoom-in {
+  opacity: 0;
+  transition:
+    opacity var(--urd-anim-duration, 600ms) ease var(--urd-anim-delay, 0ms),
+    transform var(--urd-anim-duration, 600ms) ease var(--urd-anim-delay, 0ms);
+}
+
+.urd-anim-slide-up {
+  transform: translateY(24px);
+}
+
+.urd-anim-zoom-in {
+  transform: scale(0.92);
+}
+
+.urd-anim-in {
+  opacity: 1;
+  transform: none;
+}
+
+.urd-anim-hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Combination: a block with BOTH an entrance animation AND "Lift on hover".
+   Without this the hover-lift rule (later in the CSS) overrides the entrance
+   transition, so opacity and shape jump instead of fading or sliding in.
+   Here the transition covers both the entrance (duration, delay) and hover
+   (box-shadow). Fade-in does not use transform for the entrance, so there the
+   hover lift is snappy (0.2s); slide and zoom share the entrance duration. */
+.urd-anim-fade-in.urd-anim-hover-lift {
+  transition:
+    opacity var(--urd-anim-duration, 600ms) ease var(--urd-anim-delay, 0ms),
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.urd-anim-slide-up.urd-anim-hover-lift,
+.urd-anim-zoom-in.urd-anim-hover-lift {
+  transition:
+    opacity var(--urd-anim-duration, 600ms) ease var(--urd-anim-delay, 0ms),
+    transform var(--urd-anim-duration, 600ms) ease var(--urd-anim-delay, 0ms),
+    box-shadow 0.2s ease;
+}
+
+/* On hover a fast transform applies, so the lift starts immediately even
+   when the entrance delay variable sits on the element (a briefly offset
+   start); the entrance itself rarely hits an element that is already under
+   the pointer. */
+.urd-anim-slide-up.urd-anim-hover-lift:hover,
+.urd-anim-zoom-in.urd-anim-hover-lift:hover {
+  transition:
+    opacity var(--urd-anim-duration, 600ms) ease var(--urd-anim-delay, 0ms),
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.urd-anim-hover-lift:hover {
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urd-anim-fade-in,
+  .urd-anim-slide-up,
+  .urd-anim-zoom-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .urd-anim-hover-lift,
+  .urd-anim-hover-lift:hover {
+    transform: none;
+    transition: none;
+  }
+
+  /* Gallery and background cross-fades: the JS refuses to play anything
+     automatically under reduced motion; this also removes the fade itself when
+     paging manually in the slideshow view. */
+  .urd-gallery-slide,
+  .urd-bg-slide {
+    transition: none;
+  }
+}
+
+/* The collection block (ADR-0007): three views over structured entries.
+   The inner layout is flow and grid, never frames per entry. */
+.urd-collection {
+  width: 100%;
+}
+
+.urd-collection-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.urd-collection-card {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  background: var(--urd-color-surface);
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 12%, transparent);
+  border-radius: var(--urd-radius-md);
+  padding: 1rem;
+}
+
+/* The image wrapper: the frame owns shape and rounding, and clips the zoom crop */
+.urd-collection-imgwrap {
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.urd-collection-imgwrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.urd-collection-image {
+  width: calc(100% + 2rem);
+  margin: -1rem -1rem 0.35rem;
+  height: 150px;
+  border-radius: var(--urd-radius-md) var(--urd-radius-md) 0 0;
+}
+
+.urd-collection-date {
+  font-size: 0.78em;
+  opacity: 0.65;
+}
+
+.urd-collection-title {
+  font-family: var(--urd-font-heading);
+  font-weight: 600;
+  color: inherit;
+}
+
+a.urd-collection-title {
+  color: var(--urd-color-accent);
+  text-decoration: none;
+}
+
+a.urd-collection-title:hover {
+  text-decoration: underline;
+}
+
+.urd-collection-text {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.urd-collection-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.urd-collection-row {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.urd-collection-badge {
+  flex: 0 0 auto;
+  width: 3.2rem;
+  text-align: center;
+  padding: 0.35rem 0;
+  background: var(--urd-color-surface);
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 15%, transparent);
+  border-radius: var(--urd-radius-sm);
+}
+
+.urd-collection-badge strong {
+  display: block;
+  font-size: 1.15em;
+  line-height: 1.1;
+}
+
+.urd-collection-badge span {
+  font-size: 0.7em;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.urd-collection-thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--urd-radius-sm);
+}
+
+.urd-collection-year {
+  margin: 1rem 0 0.5rem;
+  opacity: 0.85;
+}
+
+.urd-collection-archive .urd-collection-year:first-child {
+  margin-top: 0;
+}
+
+/* Editing in preview: title and text are click-to-type, images are swapped with a click */
+.urd-preview .urd-collection-editable:hover {
+  outline: 1px dashed color-mix(in srgb, var(--urd-color-accent) 60%, transparent);
+  outline-offset: 2px;
+}
+
+.urd-preview .urd-collection-placeholder:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+}
+
+.urd-preview .urd-collection-image-edit {
+  cursor: pointer;
+}
+
+.urd-preview .urd-collection-image-edit:hover {
+  outline: 2px dashed color-mix(in srgb, var(--urd-color-accent) 60%, transparent);
+  outline-offset: -2px;
+}
+
+.urd-preview .urd-collection-image-adder {
+  min-height: 56px;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 35%, transparent);
+  border-radius: var(--urd-radius-sm);
+  background: transparent;
+  color: inherit;
+  opacity: 0.6;
+  font: inherit;
+  font-size: 0.8em;
+}
+
+.urd-collection-card .urd-collection-image-adder {
+  width: calc(100% + 2rem);
+  margin: -1rem -1rem 0.35rem;
+  min-height: 90px;
+  border-radius: var(--urd-radius-md) var(--urd-radius-md) 0 0;
+}
+
+.urd-collection-row .urd-collection-image-adder {
+  flex: 0 0 auto;
+  width: 56px;
+}
+
+/* Empty state: editor preview only (visitors see nothing), the same pattern as the image block */
+.urd-preview .urd-collection-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  padding: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 30%, transparent);
+  border-radius: var(--urd-radius-md);
+  font-size: 0.85em;
+  opacity: 0.6;
+  text-align: center;
+}
+
+/* The video block: a placeholder without a URL, and a click shield while editing
+   (a click should select the block, not start the player) */
+.urd-video-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.65;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 30%, transparent);
+  border-radius: var(--urd-radius-md);
+}
+
+.urd-video-shield {
+  position: absolute;
+  inset: 0;
+}
+
+/* The icon block: the glyph is centered in the frame */
+.urd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  user-select: none;
+}
+
+/* Empty image block: a placeholder in the editor only */
+.urd-image-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 30%, transparent);
+  border-radius: var(--urd-radius-md);
+}
+
+/* The image frame: clips the image, so rounding shows whatever the fit is and
+   zoom crops cleanly towards the focal point. */
+.urd-image-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.urd-image-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Image block with a lightbox: a zoom cursor for visitors and in Clean view;
+   with chrome on, editing owns the click, so the cursor is neutral there. */
+.urd-lightbox-able {
+  cursor: zoom-in;
+}
+
+.urd-preview:not(.urd-chrome-off) .urd-lightbox-able {
+  cursor: inherit;
+}
+
+/* The gallery block: three views (grid/carousel/slideshow) over the same
+   image list. The tiles are clipping frames (like .urd-image-frame);
+   clickable tiles are button/a without any button styling of their own. */
+.urd-gallery {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.urd-gallery-tile {
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+}
+
+button.urd-gallery-tile,
+a.urd-gallery-tile {
+  cursor: zoom-in;
+}
+
+.urd-preview:not(.urd-chrome-off) .urd-gallery-edit {
+  cursor: pointer;
+}
+
+.urd-gallery-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.urd-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--urd-gallery-cols, 3), 1fr);
+  gap: var(--urd-gallery-gap, 12px);
+  height: auto;
+}
+
+.urd-gallery-grid .urd-gallery-tile {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
+/* Carousel: horizontal scroll with snap; the arrows scroll one viewport-width step. */
+.urd-gallery-track {
+  display: flex;
+  gap: var(--urd-gallery-gap, 12px);
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.urd-gallery-track .urd-gallery-tile {
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  scroll-snap-align: start;
+}
+
+/* Slideshow: stacked slides, only .on is visible (and clickable). */
+.urd-gallery-slides {
+  height: 100%;
+  overflow: hidden;
+}
+
+.urd-gallery-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.urd-gallery-slide.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.urd-gallery-slide .urd-gallery-tile {
+  width: 100%;
+  height: 100%;
+}
+
+.urd-gallery-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--urd-color-bg) 65%, transparent);
+  color: var(--urd-color-text);
+  cursor: pointer;
+}
+
+.urd-gallery-nav:hover {
+  background: color-mix(in srgb, var(--urd-color-accent) 35%, var(--urd-color-bg));
+}
+
+.urd-gallery-nav:focus-visible {
+  outline: 2px solid var(--urd-color-accent);
+  outline-offset: 2px;
+}
+
+.urd-gallery-prev {
+  left: 10px;
+}
+
+.urd-gallery-next {
+  right: 10px;
+}
+
+.urd-gallery-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  gap: 7px;
+}
+
+.urd-gallery-dot {
+  top: auto;
+  transform: none;
+  position: static;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--urd-color-text) 45%, transparent);
+}
+
+.urd-gallery-dot.on {
+  background: var(--urd-color-accent);
+}
+
+/* Empty state: editor preview only, the same pattern as the image block */
+.urd-gallery-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 0.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 30%, transparent);
+  border-radius: var(--urd-radius-md);
+}
+
+/* Scroll lock while a modal dialog is open (the lightbox today, and any future
+   showModal surface automatically): native :has()/:modal instead of JS bookkeeping
+   of body.style.overflow. Without :has support (outside the baseline tail) only
+   the lock is missing; the dialog itself still works. */
+body:has(dialog:modal) {
+  overflow: hidden;
+}
+
+/* Lightbox (engine/lightbox.js): full-screen viewing for visitors and in Clean
+   view. Dark whatever the theme is: it is a photo viewing room, not a themed
+   surface. */
+/* Native <dialog> (showModal): top layer, so no z-index is needed. The UA styles
+   for margin/border/padding/max are zeroed; the dark background is ::backdrop.
+   display is gated on [open] so it never shows between appendChild and showModal. */
+.urd-lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+}
+
+.urd-lightbox[open] {
+  display: flex;
+}
+
+.urd-lightbox::backdrop {
+  background: rgb(0 0 0 / 88%);
+}
+
+.urd-lightbox-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  max-width: 92vw;
+  max-height: 88vh;
+}
+
+.urd-lightbox-img {
+  max-width: 92vw;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.urd-lightbox-caption {
+  color: #e8eaf0;
+  font-size: 0.85rem;
+  opacity: 0.85;
+  text-align: center;
+}
+
+.urd-lightbox button {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 10%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.urd-lightbox button:hover {
+  background: rgb(255 255 255 / 24%);
+}
+
+.urd-lightbox button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.urd-lightbox-close {
+  top: 16px;
+  right: 16px;
+}
+
+.urd-lightbox-prev {
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.urd-lightbox-next {
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* The image gallery background layer: two stacked images that cross-fade. */
+.urd-bg-slideshow {
+  overflow: hidden;
+}
+
+.urd-bg-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity var(--urd-bgg-fade, 1.5s) ease;
+}
+
+.urd-bg-slide.on {
+  opacity: 1;
+}
+
+/* "+ New block" (revealed on hover, preview only): top right in the section,
+   below the section toolbar. Absolute position: the pill must never
+   take part in the flow (a flow margin would collapse out of the section and
+   leave a band without background at the top of every section). */
+.urd-preview .urd-add-block {
+  /* Counter-scaling: the handle should keep the same on-screen size as
+     the admin panels at any zoom level (urd-zoom). */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: top right;
+  position: absolute;
+  /* The offset is counter-scaled along with the chip: the section toolbar above
+     is counter-scaled too, so a fixed offset keeps the two apart at
+     every zoom level. The nav clearance (--urd-section-clear, first section only,
+     under a menu outside the flow) is added, so the chip starts below the
+     parked toolbar instead of behind the menu. */
+  top: calc(var(--urd-section-clear, 0px) + 46px * var(--urd-chrome-scale, 1));
+  right: calc(10px * var(--urd-chrome-scale, 1));
+  /* Above the block lift (99999): an overhanging block must not cover the button */
+  z-index: 100000;
+  display: grid;
+  justify-items: end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+/* The editor menus (the block menu and the section gallery) follow the Urd admin
+   color theme, not the page being edited: the editor reports the theme as
+   --urd-admin-* variables (urd-admin-theme), and here the page's variables are
+   overridden locally. The fallbacks are the admin default theme ("grey"), so the
+   menus stay readable even when the preview is opened outside admin. */
+.urd-preview .urd-add-block,
+.urd-preview .urd-add-section {
+  --urd-color-bg: var(--urd-admin-bg, #0e0f11);
+  --urd-color-surface: var(--urd-admin-surface, #191b1e);
+  --urd-color-accent: var(--urd-admin-accent, #5f6a75);
+  --urd-color-text: var(--urd-admin-text, #e6e8ea);
+}
+
+.urd-preview .urd-section:hover .urd-add-block {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Opened with a double click: the menu stands alone at the pointer, the chip button
+   is hidden, and the menu stays visible regardless of the hover rules. Raised ABOVE
+   the section chrome (+ New section 100001, the section lines 100000), so that chrome
+   sits UNDER the menu instead of poking through it. */
+.urd-preview .urd-add-block.urd-at-pointer {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 100002;
+}
+
+.urd-preview .urd-add-block.urd-at-pointer .urd-add-block-open {
+  display: none;
+}
+
+.urd-preview .urd-add-block-open {
+  font: 500 12px/1 system-ui, sans-serif;
+  color: var(--urd-color-text);
+  background: color-mix(in srgb, var(--urd-color-surface) 85%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 35%, transparent);
+  border-radius: 999px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.urd-preview .urd-add-block-open:hover {
+  border-color: var(--urd-color-accent);
+}
+
+.urd-preview .urd-add-block-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  grid-template-columns: repeat(2, minmax(6.5rem, 1fr));
+  gap: 4px;
+  padding: 6px;
+  background: var(--urd-color-surface);
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 15%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+/* Shapes: an expandable submenu spanning both columns */
+.urd-preview .urd-add-block-shapes-toggle {
+  grid-column: 1 / -1;
+}
+
+/* Plugin blocks: their own labelled section below the built-in ones */
+.urd-preview .urd-add-block-plugins {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--urd-color-text) 15%, transparent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.urd-preview .urd-add-block-shapes {
+  display: none;
+  grid-column: 1 / -1;
+  /* minmax(0, 1fr): the indent must never push the right column out of the menu */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px 0 4px 8px;
+  border-left: 2px solid color-mix(in srgb, var(--urd-color-accent) 45%, transparent);
+}
+
+.urd-preview .urd-add-block-shapes.open {
+  display: grid;
+}
+
+.urd-preview .urd-add-block-menu.open {
+  display: grid;
+}
+
+.urd-preview .urd-add-block-menu button {
+  font: 12px/1.2 system-ui, sans-serif;
+  color: var(--urd-color-text);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 18%, transparent);
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: left;
+  cursor: pointer;
+  /* Long labels without spaces (plugin views, for example) must never
+     burst the cell: break the word instead of overflowing the menu. */
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.urd-preview .urd-add-block-menu button:hover {
+  border-color: var(--urd-color-accent);
+  background: color-mix(in srgb, var(--urd-color-accent) 12%, transparent);
+}
+
+/* Placeholder for unknown types: neutral, never destructive */
+.urd-placeholder {
+  display: grid;
+  place-items: center;
+  border: 1px dashed color-mix(in srgb, var(--urd-color-text) 30%, transparent);
+  border-radius: var(--urd-radius-sm);
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+/* Navigation */
+.urd-nav {
+  /* The base padding is set by the size classes (urd-nav-size-*); the pill
+     scales it down with calc, so size and variant compose.
+     --urd-nav-shrink is the scroll shrink (urd-nav-compact on the host):
+     factor 1 when not shrunk, so every variant composes with it. */
+  --urd-nav-pad: calc(var(--urd-nav-base-pad, 0.9rem) * var(--urd-nav-shrink, 1));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: var(--urd-nav-pad) clamp(1rem, 4vw, 2.5rem);
+  /* Background and blur live in variables (set by nav.js from nav.style):
+     submenus and the mobile panel reuse the same surface as the menu itself.
+     Blur has to go through a custom property because backdrop-filter does not inherit. */
+  background: var(--urd-nav-bg, color-mix(in srgb, var(--urd-color-surface) 85%, transparent));
+  backdrop-filter: var(--urd-nav-blur, blur(8px));
+  color: var(--urd-color-text);
+  /* Anchor point for the mobile panel, and its own stacking context so dropdowns and
+     the panel sit above following content even when the menu is not sticky */
+  position: relative;
+  z-index: 5000;
+}
+
+.urd-preview .urd-nav {
+  z-index: 100001;
+}
+
+/* Sticky menu: sticky lives on the host (the header element), which may
+   leave its place in the flow - the nav itself may not (see nav.js) */
+.urd-nav-sticky {
+  position: sticky;
+  top: 0;
+  /* Above the content: it should slide under the menu, not through it */
+  z-index: 5000;
+}
+
+/* In preview the menu is raised above the section handles (100000), so the bars
+   still slide under it; the editor panels (100001+) sit above everything */
+.urd-preview .urd-nav-sticky {
+  z-index: 100001;
+}
+
+/* Scroll behavior (nav.scroll, the state classes are set by nav.js from pure
+   navScrollState): 'hide' slides the host out past the top with translate
+   (compositor, never top/margin), 'shrink' shrinks the padding via
+   the --urd-nav-shrink factor (a one-off transition, not scroll driven).
+   The transitions live on the mode class, so menus without scroll behavior
+   never get a transition. */
+.urd-nav-scroll {
+  transition: translate 0.28s ease;
+}
+
+.urd-nav-scroll .urd-nav {
+  transition: padding 0.22s ease;
+}
+
+.urd-nav-hidden {
+  /* Extra clearance so the shadow and glow follow it out of view */
+  translate: 0 calc(-100% - 24px);
+}
+
+.urd-nav-compact {
+  --urd-nav-shrink: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urd-nav-scroll,
+  .urd-nav-scroll .urd-nav {
+    transition: none;
+  }
+}
+
+.urd-nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--urd-font-heading);
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+
+.urd-nav-logo img {
+  height: var(--urd-logo-size, 2rem);
+  display: block;
+  /* Large logos grow OUT of the bar (into the padding and the content below),
+     not the bar itself - the menu height is not driven by the image. The margin
+     scales with the image height, so the contribution to the bar height is constant
+     at any size (the fixed part is calibrated against the 2rem logo). */
+  margin-block: calc(-1 * var(--urd-nav-pad) + 2px - (var(--urd-logo-size, 2rem) - 2rem) / 2);
+}
+
+.urd-nav-list {
+  display: flex;
+  /* The list spans the inner height of the bar and centers the items itself: items
+     with a submenu can then stretch to full height, so the submenu's
+     top: 100 % lands EXACTLY on the bottom of the bar (never on top of it, even when
+     the tool cluster is taller than the text items) */
+  align-self: stretch;
+  align-items: center;
+  gap: 1.25rem;
+  list-style: none;
+}
+
+/* Horizontal menu items never wrap inside the label: when space runs short,
+   nav.js folds the whole list into the burger (content-aware folding) instead
+   of letting long items break across several lines. The mobile panel (a column)
+   keeps normal wrapping - there the rows are full width. */
+body:not(.urd-mobile) .urd-nav:not(.urd-nav-mobile) .urd-nav-list a,
+body:not(.urd-mobile) .urd-nav:not(.urd-nav-mobile) .urd-nav-toggle span {
+  white-space: nowrap;
+}
+
+/* Placement of the menu items (nav.layout): the logo always comes first.
+   right is the default, achieved with space-between. */
+.urd-nav-center .urd-nav-list {
+  margin: 0 auto;
+}
+
+.urd-nav-center,
+.urd-nav-left {
+  justify-content: flex-start;
+}
+
+.urd-nav-left {
+  gap: 2rem;
+}
+
+
+.urd-nav-list a {
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+/* The hover text color can be overridden (nav.style.hoverTextColor); the default
+   is the accent color */
+.urd-nav-list a:hover,
+.urd-nav-list a:focus-visible {
+  opacity: 1;
+  color: var(--urd-nav-hover-text, var(--urd-color-accent));
+}
+
+/* Visible keyboard focus on everything interactive in the menu */
+.urd-nav a:focus-visible,
+.urd-nav button:focus-visible {
+  outline: 2px solid var(--urd-color-accent);
+  outline-offset: 2px;
+  border-radius: var(--urd-radius-sm);
+}
+
+/* The tool cluster at the far right: light/dark toggle and burger.
+   An empty cluster (no alternate theme, desktop) is hidden entirely, so the menu
+   list still ends flush with the edge. */
+.urd-nav-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.urd-nav-tools:empty {
+  display: none;
+}
+
+/* With the tool cluster after the list, placement has to be driven by auto margins,
+   not space-between (three children would be spread evenly apart) */
+.urd-nav-right .urd-nav-list {
+  margin-left: auto;
+}
+
+.urd-nav-left .urd-nav-tools {
+  margin-left: auto;
+}
+
+/* The light/dark toggle (shown only when the theme has an alternate counterpart) */
+.urd-nav-theme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.35rem;
+  opacity: 0.85;
+}
+
+/* The cart in the menu (nav.cart): the same expression as the theme toggle,
+   with a count badge at the top right. */
+.urd-nav-cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.35rem;
+  opacity: 0.85;
+}
+
+/* The clearance towards the next tool sits on the neighbor: the badge hangs outside
+   the button, and a cart last in the cluster should sit flush. */
+.urd-nav-cart + .urd-nav-theme,
+.urd-nav-cart + .urd-nav-burger {
+  margin-inline-start: 0.5rem;
+}
+
+.urd-nav-cart:hover,
+.urd-nav-cart:focus-visible {
+  opacity: 1;
+  color: var(--urd-color-accent);
+}
+
+.urd-nav-cart svg {
+  width: 20px;
+  height: 20px;
+}
+
+.urd-nav-cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  min-width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  padding: 0 3px;
+  background: var(--urd-color-accent);
+  color: var(--urd-color-bg);
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.urd-nav-theme:hover,
+.urd-nav-theme:focus-visible {
+  opacity: 1;
+  color: var(--urd-color-accent);
+}
+
+/* The burger (the mobile menu opener): hidden on desktop, shown via body.urd-mobile */
+.urd-nav-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.35rem;
+}
+
+/* Submenus (disclosure): the item is a link plus a caret button (split) or a single
+   button with title plus caret (toggle); the caret flips when the menu is open */
+.urd-nav-has-sub {
+  position: relative;
+  display: flex;
+  /* Full bar height (see .urd-nav-list): the submenu is anchored to the item's
+     bottom edge, and that edge has to be the bottom of the bar */
+  align-self: stretch;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.urd-nav-caret,
+.urd-nav-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.2rem;
+  opacity: 0.85;
+}
+
+.urd-nav-caret:hover,
+.urd-nav-toggle:hover,
+.urd-nav-caret:focus-visible,
+.urd-nav-toggle:focus-visible {
+  opacity: 1;
+  color: var(--urd-nav-hover-text, var(--urd-color-accent));
+}
+
+.urd-nav-caret svg,
+.urd-nav-toggle svg {
+  transition: transform 0.15s ease;
+}
+
+.urd-nav-caret[aria-expanded="true"] svg,
+.urd-nav-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.urd-nav-sub {
+  display: none;
+  position: absolute;
+  /* Anchored BELOW the bar, not directly below the menu item: the item is centered
+     in the bar, so top: 100% alone would land inside it (over the nav text) */
+  top: calc(100% + var(--urd-nav-pad, 0.9rem));
+  left: 0;
+  z-index: 1;
+  min-width: 12rem;
+  margin: 0;
+  padding: 0.5rem;
+  list-style: none;
+  /* Its own surface variable: by default only the color veil, never the background
+     image (nav.style.subImage turns the image on; nav.js sets the variable) */
+  background: var(--urd-nav-sub-bg, color-mix(in srgb, var(--urd-color-surface) 85%, transparent));
+  /* The variable inherits from the nav, also when nav.style turns the blur off */
+  backdrop-filter: var(--urd-nav-blur, blur(8px));
+  border-radius: var(--urd-radius-sm);
+  /* The shadow must only fall downwards: the card sits flush with the bottom
+     of the bar, and a blur without negative spread would bleed upwards and lay
+     a dark band across the bar.
+     Always black-based: a text-colored shadow becomes a bright halo in a dark
+     theme, and the dropdown should match the bar, which has none. */
+  box-shadow: 0 14px 28px -8px rgb(0 0 0 / 18%);
+  grid-template-columns: repeat(var(--urd-nav-sub-cols, 1), 1fr);
+}
+
+/* With the menu items on the right, the submenu has to stay inside the edge */
+.urd-nav-right .urd-nav-sub {
+  left: auto;
+  right: 0;
+}
+
+.urd-nav-has-sub.open > .urd-nav-sub {
+  display: grid;
+}
+
+.urd-nav-sub a {
+  display: block;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--urd-radius-sm);
+  white-space: nowrap;
+}
+
+/* Submenu design (nav.style.subStyle): the default is the
+   card above (card); the variant class sits on the nav element. The column count
+   (--urd-nav-sub-cols) is set by nav.js and works in every variant. */
+.urd-nav-sub-flat .urd-nav-sub {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.urd-nav-sub-pills .urd-nav-sub {
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  padding: 0.4rem 0;
+  gap: 0.35rem;
+}
+
+.urd-nav-sub-pills .urd-nav-sub a {
+  /* Its own pill color (nav.style.subPillColor) with the submenu surface as the
+     default; the shadow falls downwards only (see the card above) */
+  background: var(--urd-nav-sub-pill, var(--urd-nav-sub-bg, color-mix(in srgb, var(--urd-color-surface) 92%, transparent)));
+  backdrop-filter: var(--urd-nav-blur, blur(8px));
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  box-shadow: 0 6px 14px -4px rgb(0 0 0 / 15%);
+}
+
+.urd-nav-sub-lines .urd-nav-sub {
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0.25rem 0;
+}
+
+.urd-nav-sub-lines .urd-nav-sub a {
+  border-radius: 0;
+  padding: 0.55rem 1rem;
+}
+
+.urd-nav-sub-lines .urd-nav-sub li + li {
+  border-top: 1px solid color-mix(in srgb, var(--urd-color-text) 15%, transparent);
+}
+
+/* Flyout: the submenu spans the full menu width. The item stops being
+   the anchor (position: static), so the nav itself (position: relative) becomes
+   the container, and top: 100% lands right below the bar. */
+.urd-nav-sub-flyout .urd-nav-has-sub {
+  position: static;
+}
+
+.urd-nav-sub-flyout .urd-nav-sub {
+  left: 0;
+  right: 0;
+  top: 100%;
+  border-radius: 0 0 var(--urd-radius-md) var(--urd-radius-md);
+  /* The shadow must only fall downwards: negative spread keeps the blur from
+     bleeding upwards and laying a dark band across the bar itself */
+  box-shadow: 0 16px 24px -8px rgb(0 0 0 / 15%);
+}
+
+/* Mobile menu: the burger replaces the list; an open list becomes a column panel
+   below the menu with its own surface (--urd-nav-sub-bg, without the background
+   image), and the submenus become static accordions instead of floating boxes.
+   (A side column in narrow windows needs no rules of its own: nav.js renders
+   it as an ordinary top bar - effective variant bar - below 900px.)
+   The twin selectors .urd-nav-mobile (a class on the nav, set by nav.js
+   from the ACTUAL width) give the burger in the preview's desktop mode too, where
+   body.urd-mobile is owned by the editor's viewport choice - always keep them
+   together in the same rule block. */
+body.urd-mobile .urd-nav-list,
+.urd-nav-mobile .urd-nav-list {
+  display: none;
+}
+
+body.urd-mobile .urd-nav-burger,
+.urd-nav-mobile .urd-nav-burger {
+  display: inline-flex;
+}
+
+body.urd-mobile .urd-nav.urd-nav-open .urd-nav-list,
+.urd-nav-mobile.urd-nav-open .urd-nav-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem) 1rem;
+  background: var(--urd-nav-sub-bg, color-mix(in srgb, var(--urd-color-surface) 85%, transparent));
+  backdrop-filter: var(--urd-nav-blur, blur(8px));
+  box-shadow: 0 12px 24px rgb(0 0 0 / 15%);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+body.urd-mobile .urd-nav-list a,
+.urd-nav-mobile .urd-nav-list a {
+  display: block;
+  padding: 0.5rem 0;
+  /* The hover pill's 999px radius must not apply to full-width mobile rows */
+  border-radius: var(--urd-radius-sm);
+}
+
+body.urd-mobile .urd-nav-has-sub,
+.urd-nav-mobile .urd-nav-has-sub {
+  flex-wrap: wrap;
+}
+
+body.urd-mobile .urd-nav-has-sub > a,
+.urd-nav-mobile .urd-nav-has-sub > a {
+  flex: 1;
+}
+
+body.urd-mobile .urd-nav-sub,
+.urd-nav-mobile .urd-nav-sub {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 0.25rem 1rem;
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Floating variant (nav.variant): a detached pill with
+   air towards the edges. The host (header) is still sticky at full width;
+   the pill is centered inside it and therefore sticks with air above it. */
+/* The host leaves the flow when the pill floats: the content starts at the top and
+   the pill hovers over the hero. Sticky gives fixed (it follows on scroll),
+   otherwise absolute (it stays behind at the top). pointer-events pass through
+   the strips beside the pill, so the content behind can be clicked. */
+.urd-nav-float {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5000;
+  pointer-events: none;
+}
+
+.urd-preview .urd-nav-float {
+  z-index: 100001;
+}
+
+.urd-nav-float.urd-nav-sticky {
+  position: fixed;
+}
+
+.urd-nav-float .urd-nav {
+  pointer-events: auto;
+}
+
+/* Overlay (nav.overlay, variant bar only): the full-width bar leaves the flow
+   and is laid over the top section, so the top section's background fills all the way
+   up and a transparent menu reveals the hero behind it. Sticky becomes fixed, like float. */
+.urd-nav-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5000;
+}
+
+.urd-nav-overlay.urd-nav-sticky {
+  position: fixed;
+}
+
+.urd-preview .urd-nav-overlay {
+  z-index: 100001;
+}
+
+.urd-nav-var-floating {
+  /* Padding through the variable, not padding-block: the logo image's negative
+     margin trick is calibrated against --urd-nav-pad and has to follow it.
+     The pill scales the base padding down, so the size choice composes. */
+  --urd-nav-pad: calc(var(--urd-nav-base-pad, 0.9rem) * 0.67 * var(--urd-nav-shrink, 1));
+  margin: 0.75rem auto 0;
+  width: min(1100px, calc(100% - 2rem));
+  border-radius: 999px;
+}
+
+/* The square variant (nav.variant floating-square): the pill without rounding */
+.urd-nav-var-floating.urd-nav-square {
+  border-radius: 0;
+}
+
+/* The tab variant (nav.variant floating-tab): a square top, only the two lower
+   corners rounded - it hangs down from the top. Inherits the air above and the side
+   margin from the base; with topGap: false (urd-nav-flush) it becomes a hanging header. */
+.urd-nav-var-floating.urd-nav-tab {
+  border-radius: 0 0 var(--urd-radius-md) var(--urd-radius-md);
+}
+
+/* Glow around the pill: opt-in (off by default) */
+.urd-nav-glow {
+  box-shadow: 0 8px 30px color-mix(in srgb, var(--urd-color-accent) 35%, transparent);
+}
+
+/* Without air above: the pill sits right at the top (nav.style.topGap: false) */
+.urd-nav-var-floating.urd-nav-flush {
+  margin-top: 0;
+}
+
+/* Four sizes (nav.style.size): md is the default and
+   needs no class. The base padding also drives the logo calibration and the
+   submenu anchor, so everything follows the size. */
+.urd-nav-size-sm {
+  --urd-nav-base-pad: 0.55rem;
+  font-size: 0.85rem;
+}
+
+.urd-nav-size-lg {
+  --urd-nav-base-pad: 1.25rem;
+  font-size: 1.05rem;
+}
+
+.urd-nav-size-xl {
+  --urd-nav-base-pad: 1.7rem;
+  font-size: 1.15rem;
+}
+
+/* Side menu (nav.variant side-left/side-right): a fixed column along
+   the edge; body gets content padding on the same side (urd-side-*). Sticky
+   is irrelevant here - the column is always fixed. */
+.urd-nav-side-host {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  /* The width is driven by nav.style.width through the variable (set by nav.js on
+     body, so the content padding below reads the same value) */
+  width: var(--urd-nav-side-width, 250px);
+  z-index: 5000;
+}
+
+.urd-nav-side-host-right {
+  left: auto;
+  right: 0;
+}
+
+.urd-preview .urd-nav-side-host {
+  z-index: 100001;
+}
+
+body.urd-side-left {
+  padding-left: var(--urd-nav-side-width, 250px);
+}
+
+body.urd-side-right {
+  padding-right: var(--urd-nav-side-width, 250px);
+}
+
+.urd-nav-side-host .urd-nav {
+  flex-direction: column;
+  align-items: stretch;
+  height: 100%;
+  padding: 1.2rem 1rem;
+  overflow-y: auto;
+}
+
+.urd-nav-side-host .urd-nav-logo {
+  justify-content: center;
+}
+
+/* Column direction: the auto margins from the top-bar layout are reset */
+.urd-nav-side-host .urd-nav-list {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin: 1.5rem 0 0;
+}
+
+/* Extra specificity on purpose: the column row has to win over
+   the hover styles' display and padding (they come later in the file) */
+.urd-nav-side-host .urd-nav .urd-nav-list a {
+  display: block;
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--urd-radius-sm);
+}
+
+/* The tool cluster (toggle) at the bottom of the column */
+.urd-nav-side-host .urd-nav-tools {
+  margin: auto 0 0;
+  justify-content: center;
+}
+
+/* Submenus become accordions in the column (as in the mobile panel) */
+.urd-nav-side-host .urd-nav-has-sub {
+  flex-wrap: wrap;
+}
+
+.urd-nav-side-host .urd-nav-has-sub > a {
+  flex: 1;
+}
+
+.urd-nav-side-host .urd-nav-sub {
+  position: static;
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 0.25rem 1rem;
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* The logo image's negative margin trick applies to the top bar, not the column */
+.urd-nav-side-host .urd-nav-logo img {
+  margin-block: 0;
+}
+
+/* Vertical placement in the column (nav.style.sidePlacement): the default is
+   the top, independent of nav.layout (a top-bar concept). The auto margins
+   distribute the remaining space; the tool cluster drops its auto margin so the
+   list is in charge. */
+.urd-nav-side-host .urd-nav-splace-middle .urd-nav-list {
+  margin: auto 0;
+}
+
+.urd-nav-side-host .urd-nav-splace-bottom .urd-nav-list {
+  margin: auto 0 0;
+}
+
+.urd-nav-side-host .urd-nav-splace-middle .urd-nav-tools,
+.urd-nav-side-host .urd-nav-splace-bottom .urd-nav-tools {
+  margin-top: 1rem;
+}
+
+/* Pill items and the underline list apply to the column accordion too;
+   the column row's radius and padding (the extra specific rule above) have to be
+   overridden here, later in the file with the same specificity */
+.urd-nav-side-host .urd-nav-sub-pills .urd-nav-sub a {
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+}
+
+.urd-nav-side-host .urd-nav-sub-lines .urd-nav-sub a {
+  border-radius: 0;
+}
+
+/* Text alignment of the items in the column (nav.style.sideAlign) */
+.urd-nav-side-host .urd-nav-salign-center .urd-nav-list a,
+.urd-nav-side-host .urd-nav-salign-center .urd-nav-toggle {
+  text-align: center;
+  justify-content: center;
+}
+
+.urd-nav-side-host .urd-nav-salign-right .urd-nav-list a,
+.urd-nav-side-host .urd-nav-salign-right .urd-nav-toggle {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+/* The submenu caret follows the text alignment in the column: right-aligned
+   text puts the caret on the LEFT side; centered text is centered without the
+   caret pushing it (the caret is placed absolutely at the edge). */
+.urd-nav-side-host .urd-nav-salign-right .urd-nav-has-sub > .urd-nav-caret {
+  order: -1;
+}
+
+.urd-nav-side-host .urd-nav-salign-right .urd-nav-toggle svg {
+  order: -1;
+}
+
+.urd-nav-side-host .urd-nav-salign-center .urd-nav-has-sub {
+  position: relative;
+  justify-content: center;
+}
+
+.urd-nav-side-host .urd-nav-salign-center .urd-nav-has-sub > a {
+  flex: 0 0 auto;
+}
+
+.urd-nav-side-host .urd-nav-salign-center .urd-nav-has-sub > .urd-nav-caret {
+  position: absolute;
+  right: 0;
+  top: 0.1rem;
+}
+
+/* Drag handle for the column width (preview only; nav.js adds it) */
+.urd-nav-side-resize {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -3px;
+  width: 8px;
+  cursor: ew-resize;
+  z-index: 2;
+}
+
+.urd-nav-side-host-right .urd-nav-side-resize {
+  right: auto;
+  left: -3px;
+}
+
+.urd-nav-side-resize:hover {
+  background: color-mix(in srgb, var(--urd-color-accent) 45%, transparent);
+}
+
+/* On mobile a side menu falls back to the top bar with a burger: the column
+   becomes an ordinary sticky top bar and the body padding is removed. (Narrow windows
+   below 900px are handled in nav.js: effective variant bar, no rules of their own.) */
+body.urd-mobile .urd-nav-side-host {
+  position: sticky;
+  bottom: auto;
+  width: auto;
+  right: 0;
+}
+
+body.urd-mobile .urd-nav-side-host .urd-nav {
+  flex-direction: row;
+  align-items: center;
+  height: auto;
+  overflow: visible;
+  padding: var(--urd-nav-pad) clamp(1rem, 4vw, 2.5rem);
+}
+
+body.urd-mobile .urd-nav-side-host .urd-nav-tools {
+  margin: 0;
+}
+
+body.urd-mobile.urd-side-left {
+  padding-left: 0;
+}
+
+body.urd-mobile.urd-side-right {
+  padding-right: 0;
+}
+
+/* The drag handle for the column width (preview only) is hidden when the column has
+   fallen back to a top bar, and in Clean view */
+body.urd-mobile .urd-nav-side-resize,
+body.urd-chrome-off .urd-nav-side-resize {
+  display: none;
+}
+
+/* The mobile panel hangs flush below the pill as one continuous
+   surface: only the lower corners are rounded, and the pill flattens its lower
+   corners while the panel is open (longhands, so the top shape of each variant
+   survives). */
+body.urd-mobile .urd-nav-var-floating.urd-nav-open .urd-nav-list,
+.urd-nav-mobile.urd-nav-var-floating.urd-nav-open .urd-nav-list {
+  top: 100%;
+  border-radius: 0 0 var(--urd-radius-md) var(--urd-radius-md);
+}
+
+body.urd-mobile .urd-nav-var-floating.urd-nav-open,
+.urd-nav-mobile.urd-nav-var-floating.urd-nav-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Hover styles for the menu links (nav.style.hover).
+   The default is the accent color shift above; the classes below add more.
+   Everything applies to :focus-visible too, so the keyboard gets the same feedback. */
+.urd-nav-hover-underline .urd-nav-list a {
+  position: relative;
+}
+
+.urd-nav-hover-underline .urd-nav-list a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--urd-nav-hover, var(--urd-color-accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
+}
+
+.urd-nav-hover-underline .urd-nav-list a:hover::after,
+.urd-nav-hover-underline .urd-nav-list a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.urd-nav-hover-pill .urd-nav-list a {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+}
+
+.urd-nav-hover-pill .urd-nav-list a:hover,
+.urd-nav-hover-pill .urd-nav-list a:focus-visible {
+  background: color-mix(in srgb, var(--urd-nav-hover, var(--urd-color-accent)) 15%, transparent);
+}
+
+.urd-nav-hover-lift .urd-nav-list a,
+.urd-nav-hover-lift-plain .urd-nav-list a {
+  display: inline-block;
+  transition: transform 0.15s ease, text-shadow 0.15s ease;
+}
+
+/* The glow is a text-shadow BEHIND the characters; the strength is driven by
+   nav.style.hoverGlow (nav.js sets the variable as a finished percentage) */
+.urd-nav-hover-lift .urd-nav-list a:hover,
+.urd-nav-hover-lift .urd-nav-list a:focus-visible {
+  transform: translateY(-2px);
+  text-shadow: 0 4px 14px color-mix(in srgb, var(--urd-nav-hover, var(--urd-color-accent)) var(--urd-nav-hover-glow, 60%), transparent);
+}
+
+/* "Lift": the lift only, no glow */
+.urd-nav-hover-lift-plain .urd-nav-list a:hover,
+.urd-nav-hover-lift-plain .urd-nav-list a:focus-visible {
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urd-nav-caret svg,
+  .urd-nav-toggle svg,
+  .urd-nav-hover-underline .urd-nav-list a::after,
+  .urd-nav-hover-pill .urd-nav-list a,
+  .urd-nav-hover-lift .urd-nav-list a,
+  .urd-nav-hover-lift-plain .urd-nav-list a {
+    transition: none;
+  }
+
+  .urd-nav-hover-lift .urd-nav-list a:hover,
+  .urd-nav-hover-lift .urd-nav-list a:focus-visible,
+  .urd-nav-hover-lift-plain .urd-nav-list a:hover,
+  .urd-nav-hover-lift-plain .urd-nav-list a:focus-visible {
+    transform: none;
+  }
+}
+
+/* Smart guides: snap lines against neighboring blocks while dragging (preview only) */
+.urd-preview .urd-smart-guide {
+  position: absolute;
+  z-index: 1001;
+  /* The thickness is counter-scaled (urd-zoom), so the line keeps its on-screen
+     thickness at every zoom level. The color is DELIBERATELY a fixed magenta and not
+     the admin accent: guides must stand apart from both the grid (which uses
+     the accent) and the page's own colors, whatever the admin theme. The same
+     convention as Figma and Wix. The shadow gives contrast against light surfaces. */
+  background: #ff2d87;
+  box-shadow: 0 0 0 calc(1px * var(--urd-chrome-scale, 1)) color-mix(in srgb, #000 55%, transparent);
+  pointer-events: none;
+}
+
+.urd-preview .urd-smart-guide-v {
+  top: 0;
+  bottom: 0;
+  width: calc(2px * var(--urd-chrome-scale, 1));
+}
+
+.urd-preview .urd-smart-guide-h {
+  left: 0;
+  right: 0;
+  height: calc(2px * var(--urd-chrome-scale, 1));
+}
+
+/* Multi-selection: the selection frame (marquee), member highlighting and the
+   floating align/distribute toolbar */
+.urd-preview .urd-marquee {
+  position: absolute;
+  z-index: 1002;
+  border: 1px dashed var(--urd-admin-accent, #5f6a75);
+  background: color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 12%, transparent);
+  pointer-events: none;
+}
+
+body.urd-marqueeing {
+  user-select: none;
+}
+
+.urd-preview .urd-block.urd-multi-selected {
+  outline: calc(2px * var(--urd-chrome-scale, 1)) dashed var(--urd-admin-accent, #5f6a75);
+  outline-offset: 0;
+}
+
+.urd-multi-toolbar {
+  /* Counter-scaling (urd-zoom): the anchor is set by JS in viewport
+     coordinates, so the origin has to be that corner. */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: top left;
+  position: fixed;
+  z-index: 100002;
+  display: none;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  background: #151a23;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+.urd-multi-toolbar.visible {
+  display: flex;
+}
+
+.urd-multi-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  color: #e8eaf0;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 5px;
+  cursor: pointer;
+}
+
+.urd-multi-toolbar button:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
+/* The delete button in the selection bar: a destructive tone on hover. */
+.urd-multi-toolbar .urd-multi-delete:hover {
+  background: rgb(224 82 82 / 25%);
+  color: #ffb4b4;
+}
+
+/* The drag handle in the selection bar: the whole selection is dragged as one. */
+.urd-multi-toolbar .urd-multi-drag {
+  cursor: grab;
+  touch-action: none;
+}
+
+.urd-multi-toolbar .urd-multi-drag:active {
+  cursor: grabbing;
+}
+
+.urd-multi-count {
+  font: 600 11px/1 system-ui, sans-serif;
+  color: rgb(232 234 240 / 70%);
+  padding: 0 6px 0 2px;
+  white-space: nowrap;
+}
+
+/* Page-wide guides (the on/off button next to the view choices):
+   a dashed accent, in contrast to the solid smart drag lines.
+   Below the smart guides in z, never clickable, never shown to visitors. */
+.urd-preview .urd-page-guide {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.urd-preview .urd-page-guide-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--urd-admin-accent, #5f6a75) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+.urd-preview .urd-page-guide-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--urd-admin-accent, #5f6a75) 0 6px,
+    transparent 6px 12px
+  );
+}
+
+/* Shared footer (site.footer): shown on every page when show is on */
+#urd-footer .urd-footer {
+  padding: 2rem clamp(1rem, 4vw, 2.5rem);
+  background: var(--urd-color-surface);
+  color: color-mix(in srgb, var(--urd-color-text) 75%, transparent);
+  font-size: 0.9rem;
+  display: grid;
+  gap: 0.3rem;
+  /* Its own stacking context so a layered background (.urd-footer-bg, z-index -1)
+     sits behind the content but in front of the footer's own surface. */
+  position: relative;
+  isolation: isolate;
+}
+
+/* Turned on but empty footer: a visible, completely empty surface (surface background),
+   no text. It fills as soon as something is entered in the Footer panel. */
+#urd-footer .urd-footer-empty {
+  min-height: 4rem;
+}
+
+.urd-footer-center {
+  text-align: center;
+}
+
+.urd-footer-right {
+  text-align: right;
+}
+
+/* Rich footer: brand, columns, social links and bottom line.
+   The #urd-footer prefix is required to beat the base rule (#urd-footer .urd-footer,
+   id+class) which otherwise keeps display: grid and makes the footer a single column. */
+#urd-footer .urd-footer-rich {
+  display: block;
+  padding: 0;
+  color: color-mix(in srgb, var(--urd-color-text) 72%, transparent);
+}
+.urd-footer-wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.6rem clamp(1rem, 4vw, 2.5rem) 1.4rem;
+}
+/* Brand + link columns in ONE grid: equally wide columns (1fr), equal gap,
+   always on one row. --n = the number of tracks (a wide column counts as two). Collapses
+   responsively to 2 and 1 column. Centered/doormat/Large CTA use a flex column. */
+.urd-footer-top {
+  display: grid;
+  grid-template-columns: 1.7fr repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 1.7rem 2.5rem;
+  align-items: start;
+}
+.urd-footer-brand {
+  min-width: 0;
+}
+.urd-footer-col {
+  min-width: 0;
+}
+/* Wide column: spans two tracks, the links split into two sub-columns. */
+.urd-footer-col-wide {
+  grid-column: span 2;
+}
+.urd-footer-col-wide ul {
+  display: block;
+  columns: 2;
+  column-gap: 2.2rem;
+}
+.urd-footer-col-wide ul li {
+  break-inside: avoid;
+  margin-bottom: 0.55rem;
+}
+/* "Centered" column alignment: the wide column's heading is centered. */
+.urd-footer-cols-center .urd-footer-col-wide h4 {
+  text-align: center;
+}
+.urd-footer-rich.urd-footer-center .urd-footer-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.urd-footer-rich.urd-footer-center .urd-footer-brand {
+  max-width: 34rem;
+}
+@media (max-width: 780px) {
+  .urd-footer-top {
+    grid-template-columns: 1fr 1fr;
+  }
+  .urd-footer-top > .urd-footer-brand {
+    grid-column: 1 / -1;
+  }
+  .urd-footer-col-wide {
+    grid-column: auto;
+  }
+  .urd-footer-col-wide ul {
+    columns: 1;
+  }
+}
+@media (max-width: 480px) {
+  .urd-footer-top {
+    grid-template-columns: 1fr;
+  }
+}
+/* The brand: text, a logo (image) or both (logo + text side by side). */
+.urd-footer-brand-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.urd-footer-rich.urd-footer-center .urd-footer-brand-id {
+  justify-content: center;
+}
+.urd-footer-logo {
+  height: var(--urd-footer-logo-h, 40px);
+  width: auto;
+  max-width: 100%;
+  display: block;
+}
+.urd-footer-brand-top {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.4rem;
+}
+.urd-footer-brand-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--urd-color-text);
+}
+.urd-footer-tagline {
+  margin: 0.5rem 0 0;
+  max-width: 32ch;
+  line-height: 1.5;
+}
+.urd-footer-col h4 {
+  margin: 0 0 0.7rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--urd-color-text) 58%, transparent);
+}
+.urd-footer-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+.urd-footer-rich a {
+  color: inherit;
+  text-decoration: none;
+}
+.urd-footer-rich a:hover {
+  color: var(--urd-color-text);
+  text-decoration: underline;
+}
+.urd-footer-social {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+.urd-footer-rich.urd-footer-center .urd-footer-social {
+  justify-content: center;
+}
+.urd-footer-soc {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 18%, transparent);
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--urd-color-text) 70%, transparent);
+}
+.urd-footer-soc:hover {
+  color: var(--urd-color-text);
+  border-color: color-mix(in srgb, var(--urd-color-text) 40%, transparent);
+}
+.urd-footer-soc svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
+}
+.urd-footer-baseline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.8rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid color-mix(in srgb, var(--urd-color-text) 12%, transparent);
+  font-size: 0.82rem;
+  color: color-mix(in srgb, var(--urd-color-text) 55%, transparent);
+}
+.urd-footer-rich.urd-footer-center .urd-footer-baseline {
+  justify-content: center;
+}
+@media (max-width: 640px) {
+  .urd-footer-baseline {
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* The bottom line: text on the left, optional links on the right. */
+.urd-footer-baseline-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1rem;
+}
+.urd-footer-baseline-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.2rem;
+}
+
+/* The doormat link row (Centered / Large CTA): one centered row of links. */
+.urd-footer-linkrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.6rem;
+  justify-content: center;
+  margin-top: 1.4rem;
+}
+.urd-footer-social-center {
+  justify-content: center;
+}
+
+/* Call to action (CTA): heading + subtext + button or newsletter. */
+.urd-footer-cta {
+  margin-top: 1.1rem;
+  max-width: 22rem;
+}
+.urd-footer-rich.urd-footer-center .urd-footer-cta {
+  margin-inline: auto;
+}
+.urd-footer-cta-h {
+  font-weight: 650;
+  color: var(--urd-color-text);
+  margin-bottom: 0.5rem;
+}
+.urd-footer-cta-sub {
+  margin: 0.3rem 0 0;
+  line-height: 1.5;
+}
+.urd-footer-cta-btn {
+  display: inline-block;
+  background: var(--urd-color-accent);
+  color: var(--urd-color-accent-text, #fff);
+  font: inherit;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.urd-footer-cta-btn:hover {
+  text-decoration: none;
+  filter: brightness(1.06);
+}
+/* Large centered CTA (the Large CTA template). */
+.urd-footer-bigcta {
+  max-width: 40rem;
+  margin: 0 auto;
+  text-align: center;
+}
+.urd-footer-bigcta .urd-footer-cta-h {
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.urd-footer-bigcta .urd-footer-cta-sub {
+  font-size: 1rem;
+  margin-top: 0.7rem;
+}
+.urd-footer-bigcta .urd-footer-cta-btn {
+  margin-top: 1.1rem;
+  padding: 0.7rem 1.4rem;
+}
+/* Newsletter form. */
+.urd-footer-nl {
+  margin-top: 0.7rem;
+}
+.urd-footer-nl-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.urd-footer-rich.urd-footer-center .urd-footer-nl-row {
+  justify-content: center;
+}
+.urd-footer-nl-email {
+  flex: 1 1 12rem;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 22%, transparent);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  background: color-mix(in srgb, var(--urd-color-text) 4%, transparent);
+  color: var(--urd-color-text);
+  font: inherit;
+}
+.urd-footer-nl-status {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  min-height: 1.1em;
+}
+.urd-footer-nl-status.ok {
+  color: var(--urd-color-accent);
+}
+.urd-footer-nl-status.error {
+  color: #e5484d;
+}
+/* Honeypot: completely hidden from humans, visible to bots. */
+.urd-footer-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* Buttons */
+.urd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.5em 1.2em;
+  border-radius: var(--urd-radius-sm);
+  font-family: var(--urd-font-heading);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.urd-button-primary {
+  background: var(--urd-color-accent);
+  /* Text on accent: without the token the background color is used, so
+     palettes that do not define it render unchanged */
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
+}
+
+.urd-button-primary:hover {
+  filter: brightness(1.1);
+}
+
+.urd-button-secondary {
+  border: 1px solid var(--urd-color-accent);
+  color: var(--urd-color-accent);
+}
+
+/* Animated gradient background (pan/orbit): the gradient is painted on a 200 % runner
+   (gradient.js) that is offset with transform on the compositor thread, never
+   background-position (a repaint of the layer per frame). The host clips
+   (urd-bg-loop-host). The translate % is of the runner itself, so -50 % is one whole
+   surface width or height. */
+.urd-bg-pan-runner,
+.urd-bg-orbit-runner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 200%;
+}
+
+.urd-bg-pan-runner {
+  animation: urd-bg-pan 18s ease-in-out infinite alternate;
+}
+
+@keyframes urd-bg-pan {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-50%, -50%); }
+}
+
+/* One-way panning: a circular repeating gradient (the last color slides
+   back into the first) on an oversized runner that is offset by exactly one
+   period along the gradient axis per cycle (px measurements from loopGeometry in
+   gradient.js) - seamless for any angle the owner sets. The host
+   clips, so the runner never sticks out of the section. */
+.urd-bg-loop-host {
+  overflow: hidden;
+}
+
+.urd-bg-loop-runner {
+  position: absolute;
+  inset: 0;
+  animation: urd-bg-loop 30s linear infinite;
+}
+
+@keyframes urd-bg-loop {
+  to { transform: translate(var(--urd-loop-dx, 0px), var(--urd-loop-dy, 0px)); }
+}
+
+/* Rotation: the angle spins through the registered --urd-grad-spin
+   (CSS.registerProperty in gradient.js); without support it stands still */
+.urd-bg-rotate {
+  animation: urd-bg-rotate 40s linear infinite;
+}
+
+@keyframes urd-bg-rotate {
+  to { --urd-grad-spin: 360deg; }
+}
+
+/* Pulsing (radial): the strength breathes around the layer's own opacity;
+   the 0/100 % frames inherit the inline value, so the breath always starts there */
+.urd-bg-pulse {
+  animation: urd-bg-pulse 7s ease-in-out infinite;
+}
+
+@keyframes urd-bg-pulse {
+  50% { opacity: calc(var(--urd-bg-op, 1) * 0.45); }
+}
+
+/* Orbit (radial): the runner is anchored (inline left/top from gradient.js)
+   so the center of the gradient stays in place, and the orbit swings it ±2 % of
+   its own size (= 4 % of the surface) */
+.urd-bg-orbit-runner {
+  animation: urd-bg-orbit 26s ease-in-out infinite;
+}
+
+@keyframes urd-bg-orbit {
+  0%, 100% { transform: translate(-2%, 0); }
+  25% { transform: translate(0, -2%); }
+  50% { transform: translate(2%, 0); }
+  75% { transform: translate(0, 2%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urd-bg-pan-runner,
+  .urd-bg-orbit-runner,
+  .urd-bg-loop-runner,
+  .urd-bg-rotate,
+  .urd-bg-pulse {
+    animation: none;
+  }
+}
+
+/* Parallax for the image background layer: scroll-driven CSS on the compositor thread,
+   in place of the rAF/scroll listener in backgrounds/image.js. The travel is set as
+   --urd-px-shift (px) by mountParallaxCss (at setup and on resize, not on scroll);
+   the view() timeline scrubs translateY from -shift (the layer enters from below)
+   to +shift (the layer leaves the top), zero at the center. Gated with @supports; without
+   support JS wires up the rAF-driven variant instead. Still (end state) on
+   mobile and under reduced motion. */
+@supports (animation-timeline: view()) {
+  .urd-bg-image.urd-parallax-css,
+  .urd-bg-video.urd-parallax-css {
+    animation: urd-parallax-y linear both;
+    animation-timeline: view();
+  }
+
+  @keyframes urd-parallax-y {
+    from { transform: translateY(calc(-1 * var(--urd-px-shift, 0px))); }
+    to { transform: translateY(var(--urd-px-shift, 0px)); }
+  }
+
+  body.urd-mobile .urd-bg-image.urd-parallax-css,
+  body.urd-mobile .urd-bg-video.urd-parallax-css {
+    animation: none;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urd-bg-image.urd-parallax-css,
+  .urd-bg-video.urd-parallax-css {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* Page transitions (ADR-0011): cross-document View Transitions give a soft
+   cross-fade between the pages of the published site. The gate is
+   the at-rule itself: engines without support ignore it and navigate plainly
+   (end state). The editor preview is never affected - there page switches happen via
+   postMessage, not navigation. Nav and footer get a view-transition-name only
+   inside the transition window itself (wireViewTransitionNames in urd.js): a static
+   name here would make them backdrop roots, which turns off the menu's
+   backdrop-filter (the blur behind the nav) in all ordinary viewing. */
+@view-transition {
+  navigation: auto;
+}
+
+/* Reduced motion: the transition is kept (navigation is just as fast),
+   but every animation inside it is turned off, so the switch is a clean cut. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
+
+/* Smooth anchor scrolling (block links to #anchor and the "Back to top" arrow): native
+   scroll-behavior instead of a JS animation. Programmatic scrolls that have to
+   be immediate (the drag compensation in preview-edit.js) say behavior:
+   'instant' explicitly and are left alone. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* The "Back to top" arrow (mountToTop in urd.js) */
+.urd-totop {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 90;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--urd-color-accent) 85%, black);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.urd-totop.visible {
+  opacity: 0.85;
+  pointer-events: auto;
+}
+
+.urd-totop.visible:hover {
+  opacity: 1;
+}
+
+/* The preview: hide the viewport scrollbar (scrolling still works
+   with wheel and touch). The canvas is a scaled-down iframe, not a real window,
+   so the height is the editor's and not the visitor's; the scrollbar therefore
+   measures something that does not exist for a visitor, and lands as a stripe
+   next to the content. Visitors and "View site" keep the browser's ordinary
+   scrollbar. */
+html:has(body.urd-preview) {
+  scrollbar-width: none;
+}
+
+html:has(body.urd-preview)::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mobile view in the editor: the structure tools (add bars, height handles)
+   are hidden; mobile is for layout adjustment and review */
+body.urd-mobile .urd-add-section,
+body.urd-mobile .urd-section-resize,
+body.urd-mobile .urd-section-resize-top {
+  display: none !important;
+}
+
+/* Mobile review: the section needs a pass over the mobile layout
+   (an editorial flag, preview only) */
+.urd-preview .urd-attention {
+  outline: 2px solid #e2b84a;
+  outline-offset: -2px;
+}
+
+/* Decor toggle on the block toolbar */
+.urd-preview .urd-edit-toolbar .urd-edit-decor.on {
+  background: #e2b84a;
+  color: #1a1508;
+}
+
+/* The review card in mobile view: what happened, when, and the reviewed
+   button. Counter-scaled like the rest of the editing layer (urd-zoom). */
+.urd-preview .urd-attention-card {
+  position: absolute;
+  top: calc(var(--urd-section-clear, 0px) + 8px * var(--urd-chrome-scale, 1));
+  left: 50%;
+  transform: translateX(-50%) scale(var(--urd-chrome-scale, 1));
+  transform-origin: top center;
+  z-index: 100000;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  max-width: 320px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #e2b84a 55%, transparent);
+  background: color-mix(in srgb, var(--urd-admin-surface, #151a23) 92%, #e2b84a);
+  color: var(--urd-admin-text, #e6e8ea);
+  font: 500 12.5px system-ui, sans-serif;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 35%);
+}
+
+.urd-preview .urd-attention-since {
+  font-size: 11px;
+  opacity: 0.65;
+}
+
+.urd-preview .urd-attention-card button {
+  margin-top: 2px;
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: #e2b84a;
+  color: #1a1508;
+  font: 600 12px system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* The pin marker on an overridden mobile block: shows that the block is detached
+   from the desktop layout. The same shape as the sticky pin, yellow like the review flag. */
+.urd-preview .urd-mobile-pin {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  z-index: 100000;
+  display: grid;
+  place-items: center;
+  width: calc(18px * var(--urd-chrome-scale, 1));
+  height: calc(18px * var(--urd-chrome-scale, 1));
+  border-radius: 50%;
+  background: #e2b84a;
+  color: #1a1508;
+  pointer-events: none;
+}
+
+.urd-preview .urd-mobile-pin svg {
+  width: calc(11px * var(--urd-chrome-scale, 1));
+  height: calc(11px * var(--urd-chrome-scale, 1));
+}
+
+/* Armed reset ("Sure?") in the section toolbar */
+.urd-preview .urd-section-toolbar button.urd-armed {
+  background: #d94f3d;
+  color: #fff;
+}
+
+/* The hidden-on-mobile list: a floating panel below the section toolbar, with
+   one row per hidden block and the eye button that brings it back. */
+.urd-preview .urd-hidden-list {
+  position: absolute;
+  top: calc(var(--urd-section-clear, 0px) + 46px * var(--urd-chrome-scale, 1));
+  right: calc(10px * var(--urd-chrome-scale, 1));
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: top right;
+  z-index: 100001;
+  display: grid;
+  gap: 2px;
+  min-width: 170px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: var(--urd-admin-surface, #151a23);
+  color: var(--urd-admin-text, #e6e8ea);
+  font: 500 12px system-ui, sans-serif;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 35%);
+}
+
+.urd-preview .urd-hidden-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 4px 3px 8px;
+}
+
+.urd-preview .urd-hidden-list button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px;
+  background: rgb(255 255 255 / 8%);
+  color: inherit;
+  cursor: pointer;
+}
+
+.urd-preview .urd-hidden-list button:hover {
+  background: rgb(255 255 255 / 16%);
+}
+
+/* The editing layer - applies ONLY in preview mode (body.urd-preview,
+   set by the engine inside the editor's iframe) */
+.urd-preview .urd-grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  /* The line width is counter-scaled (urd-zoom), so the lines keep their on-screen
+     width and stay crisp at every zoom level. The cell size itself is
+     NOT counter-scaled: it is the page's own geometry and follows the zoom. */
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 45%, transparent) calc(1px * var(--urd-chrome-scale, 1)), transparent calc(1px * var(--urd-chrome-scale, 1))),
+    linear-gradient(to bottom, color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 45%, transparent) calc(1px * var(--urd-chrome-scale, 1)), transparent calc(1px * var(--urd-chrome-scale, 1)));
+}
+
+.urd-preview .urd-editable:hover {
+  /* ON the edge, not outside it: the box is what snaps to the grid. */
+  outline: calc(1px * var(--urd-chrome-scale, 1)) dashed var(--urd-admin-accent, #5f6a75);
+  outline-offset: 0;
+}
+
+.urd-preview .urd-edit-toolbar {
+  /* Counter-scaling: the handle should keep the same on-screen size as
+     the admin panels at any zoom level (urd-zoom). */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: bottom left;
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  /* An invisible bridge down to the block edge, so hover is not lost on the way
+     up to the handles */
+  padding-bottom: 5px;
+  display: none;
+  gap: 2px;
+  z-index: 1000;
+}
+
+/* The toolbar sits above the block, also near the top of a section: sections
+   never clip, so there is usually nothing to make room for. The exception is
+   blocks at the top of the PAGE: there is no room above the top of the document, and
+   preview-edit sets the class that flips the bar below the block instead. */
+.urd-preview .urd-edit-toolbar.urd-toolbar-under {
+  bottom: auto;
+  top: 100%;
+  padding-bottom: 0;
+  /* An invisible bridge up to the block edge, the same role as padding-bottom above */
+  padding-top: 5px;
+  transform-origin: top left;
+}
+
+.urd-preview .urd-editable:hover .urd-edit-toolbar,
+.urd-preview .urd-edit-toolbar:hover {
+  display: flex;
+}
+
+.urd-preview .urd-edit-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--urd-admin-accent, #5f6a75);
+  color: var(--urd-admin-accent-text, #fff);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 6px;
+  cursor: grab;
+}
+
+.urd-preview .urd-edit-toolbar .urd-edit-delete {
+  cursor: pointer;
+  background: #c0392b;
+}
+
+.urd-preview .urd-edit-resize {
+  /* Counter-scaling: the handle should keep the same on-screen size as
+     the admin panels at any zoom level (urd-zoom). */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: bottom right;
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--urd-admin-accent, #5f6a75);
+  cursor: nwse-resize;
+  display: none;
+  z-index: 1000;
+}
+
+.urd-preview .urd-editable:hover .urd-edit-resize {
+  display: block;
+}
+
+/* Rotation handle: a small circle at the block's top right corner */
+.urd-preview .urd-edit-rotate {
+  /* Counter-scaling: the handle should keep the same on-screen size as
+     the admin panels at any zoom level (urd-zoom). */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: top right;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 16px;
+  height: 16px;
+  display: none;
+  place-items: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--urd-admin-accent-text, #fff);
+  border-radius: 50%;
+  background: var(--urd-admin-accent, #5f6a75);
+  cursor: grab;
+  user-select: none;
+  z-index: 1000;
+}
+
+.urd-preview .urd-editable:hover .urd-edit-rotate,
+.urd-preview .urd-block.urd-selected .urd-edit-rotate {
+  display: grid;
+}
+
+/* Selected block: a persistent outline and always visible handles */
+.urd-preview .urd-block.urd-selected {
+  outline: calc(2px * var(--urd-chrome-scale, 1)) solid var(--urd-admin-accent, #5f6a75);
+  outline-offset: 0;
+}
+
+/* The whole block surface can be dragged directly; editable text keeps the text cursor */
+.urd-preview .urd-editable {
+  cursor: move;
+}
+
+.urd-preview .urd-editable .urd-text[contenteditable='true'] {
+  cursor: text;
+}
+
+/* While editing, the hovered or selected block is raised visually to the top, so that
+   the handles can always be reached even if other blocks lie above it (z order).
+   The true layer order is shown when the block is deselected - and ALWAYS in Clean
+   view (chrome-off), which must be exactly what visitors see. */
+.urd-preview:not(.urd-chrome-off) .urd-editable:hover {
+  z-index: 99998 !important;
+}
+
+.urd-preview:not(.urd-chrome-off) .urd-block.urd-selected {
+  z-index: 99999 !important;
+}
+
+.urd-preview.urd-chrome-off .urd-block.urd-selected {
+  outline: none;
+}
+
+.urd-preview .urd-block.urd-selected .urd-edit-toolbar {
+  display: flex;
+}
+
+.urd-preview .urd-block.urd-selected .urd-edit-resize {
+  display: block;
+}
+
+/* A pin on blocks with "Pin on scroll": the pinning is invisible until you
+   scroll, so the marker shows that it is on. Always visible with chrome
+   on (not only on hover), and gone in Clean view like the rest of the chrome. */
+.urd-preview .urd-sticky-badge {
+  position: absolute;
+  /* Counter-scaling (urd-zoom): the marker keeps admin size like the mobile pin
+     marker (.urd-mobile-pin), and lets clicks through to the block. */
+  top: calc(-7px * var(--urd-chrome-scale, 1));
+  left: calc(-7px * var(--urd-chrome-scale, 1));
+  width: calc(16px * var(--urd-chrome-scale, 1));
+  height: calc(16px * var(--urd-chrome-scale, 1));
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--urd-admin-accent, #5f6a75);
+  color: #fff;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.urd-preview .urd-sticky-badge svg {
+  width: calc(11px * var(--urd-chrome-scale, 1));
+  height: calc(11px * var(--urd-chrome-scale, 1));
+}
+
+.urd-preview.urd-chrome-off .urd-sticky-badge {
+  display: none;
+}
+
+/* The "+ New section" bars float ON TOP OF the boundary between sections and take
+   zero space in the flow, so the sections sit flush exactly
+   as visitors see them (preview only) */
+.urd-preview .urd-add-section {
+  position: relative;
+  height: 0;
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  /* Above the section line grips (.urd-section-resize/-top, 100000): where
+     the chip sits it has to be CLICKABLE, not captured by the drag surface
+     (the chip drags that same boundary itself via wireHeightDrag anyway). The bar
+     itself is 0 px tall and pointer-events: none, so only the chip pill
+     and the gallery sit above anything. */
+  z-index: 100001;
+  /* Hidden until the mouse is over an adjacent section (or the bar itself):
+     less noise, and the topmost bar does not collide with the menu */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+}
+
+.urd-preview .urd-add-section:hover,
+.urd-preview .urd-section:hover + .urd-add-section,
+.urd-preview .urd-add-section:has(+ .urd-section:hover) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Empty page: the only bar has no neighboring section to be revealed by, so
+   the hover rules above can never show it. It therefore stays visible and fills
+   the surface as an empty state, otherwise the page cannot be built on at all. */
+.urd-preview #urd-root > .urd-add-section:only-child {
+  opacity: 1;
+  pointer-events: auto;
+  height: min(55vh, 380px);
+  align-items: center;
+}
+.urd-preview #urd-root > .urd-add-section:only-child > button {
+  /* Empty page: the bar fills the surface, so the chip must not be centered on a
+     zero-height line. The counter-scaling is kept. */
+  transform: scale(var(--urd-chrome-scale, 1));
+}
+
+.urd-preview .urd-add-section::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 35%, transparent) 0 8px,
+    transparent 8px 16px
+  );
+}
+
+.urd-preview .urd-add-section button {
+  /* translateY centers the chip on the 0 px tall bar; scale is
+     the counter-scaling that keeps admin size at any zoom (urd-zoom). */
+  transform: translateY(-50%) scale(var(--urd-chrome-scale, 1));
+  border: 1px dashed color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 60%, transparent);
+  border-radius: 999px;
+  background: var(--urd-color-bg);
+  color: var(--urd-color-text);
+  font-size: 12px;
+  padding: 3px 12px;
+  cursor: pointer;
+  opacity: 0.75;
+  height: fit-content;
+}
+
+.urd-preview .urd-add-section button:hover {
+  opacity: 1;
+  border-style: solid;
+}
+
+/* The topmost bar: the chip is placed BELOW the boundary line instead of on top
+   of it, with the counter-scaling intact (a bare translateY here would drop it
+   and give the chip the wrong size). */
+#urd-root > .urd-add-section:first-child > button {
+  transform: translateY(4px) scale(var(--urd-chrome-scale, 1));
+  transform-origin: top center;
+}
+
+/* With the menu outside the flow (floating pill or overlay) the boundary line sits in
+   the menu band: the chip is placed below the measured menu height (--urd-nav-h from
+   nav.js), so it can be seen and clicked instead of sitting behind the menu. */
+#urd-nav.urd-nav-float + #urd-root > .urd-add-section:first-child > button,
+#urd-nav.urd-nav-overlay + #urd-root > .urd-add-section:first-child > button {
+  transform: translateY(calc(var(--urd-nav-h, 0px) + 6px)) scale(var(--urd-chrome-scale, 1));
+}
+
+/* The preset gallery (an open "+ New section"): a grouped panel with scrolling.
+   Kept visible regardless of the hover rules above through the .open class. */
+.urd-preview .urd-add-section.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The category sidebar form (G2): a narrow category rail on the left,
+   search + grid on the right. The scroll lives in the content pane, not in the menu. */
+.urd-preview .urd-preset-menu {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  /* translateX centers the menu; scale is the counter-scaling that keeps it at
+     admin size at any zoom (urd-zoom). The origin is at the top so it grows
+     downwards from the bar instead of moving. */
+  transform: translateX(-50%) scale(var(--urd-chrome-scale, 1));
+  transform-origin: top center;
+  display: flex;
+  width: min(560px, calc(100vw - 16px));
+  max-height: min(70vh, 460px);
+  overflow: hidden;
+  background: var(--urd-color-bg);
+  border: 1px solid color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 45%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+  text-align: left;
+  z-index: 1003;
+}
+
+.urd-preview .urd-preset-menu.urd-preset-up {
+  top: auto;
+  bottom: 8px;
+}
+
+/* The category colors (F2): five fixed steps derived from
+   the admin accent. Without relative color syntax support every step falls
+   back to the accent alone (the ADR-0011 pattern). Red is
+   not used (reserved for destructive actions). The saturation floor max(c, 0.09)
+   gives the grey theme muted but distinguishable tones. */
+.urd-preview .urd-preset-menu {
+  --urd-category-1: var(--urd-admin-accent, #5f6a75);
+  --urd-category-2: var(--urd-admin-accent, #5f6a75);
+  --urd-category-3: var(--urd-admin-accent, #5f6a75);
+  --urd-category-4: var(--urd-admin-accent, #5f6a75);
+  --urd-category-5: var(--urd-admin-accent, #5f6a75);
+}
+
+@supports (color: oklch(from red l max(c, 0.09) calc(h + 48))) {
+  .urd-preview .urd-preset-menu {
+    --urd-category-1: oklch(from var(--urd-admin-accent, #5f6a75) l max(c, 0.09) h);
+    --urd-category-2: oklch(from var(--urd-admin-accent, #5f6a75) l max(c, 0.09) calc(h + 243));
+    --urd-category-3: oklch(from var(--urd-admin-accent, #5f6a75) l max(c, 0.09) calc(h + 153));
+    --urd-category-4: oklch(from var(--urd-admin-accent, #5f6a75) l max(c, 0.09) calc(h + 48));
+    --urd-category-5: oklch(from var(--urd-admin-accent, #5f6a75) l max(c, 0.09) calc(h - 62));
+  }
+}
+
+/* The category dot: carried by the category buttons and the group headings. */
+.urd-preview .urd-preset-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--urd-category-color, var(--urd-admin-accent, #5f6a75));
+}
+
+/* "All" points at the whole palette: the dot is a small gradient across the steps. */
+.urd-preview .urd-preset-rail-all .urd-preset-dot {
+  background: linear-gradient(135deg, var(--urd-category-1), var(--urd-category-3));
+}
+
+.urd-preview .urd-preset-rail {
+  flex: 0 0 122px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: stretch;
+  padding: 8px 6px;
+  border-right: 1px solid color-mix(in srgb, var(--urd-color-text) 10%, transparent);
+  overflow-y: auto;
+}
+
+.urd-preview .urd-preset-rail-title {
+  padding: 0 6px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--urd-color-text);
+}
+
+/* The category buttons: the chip rule (.urd-add-section button) hits every
+   button in the bar, so the selector goes through .urd-preset-menu and resets
+   transform and opacity. */
+.urd-preview .urd-preset-menu .urd-preset-rail button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: none;
+  opacity: 1;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: 600 11.5px system-ui, sans-serif;
+  padding: 5px 7px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.urd-preview .urd-preset-menu .urd-preset-rail button:hover {
+  background: color-mix(in srgb, var(--urd-category-color, var(--urd-admin-accent, #5f6a75)) 14%, transparent);
+}
+
+/* The active category choice is filled with the category's OWN color (F2). */
+.urd-preview .urd-preset-menu .urd-preset-rail button.on {
+  background: color-mix(in srgb, var(--urd-category-color, var(--urd-admin-accent, #5f6a75)) 26%, transparent);
+  color: var(--urd-color-text);
+}
+
+/* My templates are separated from the preset categories by a thin line. */
+.urd-preview .urd-preset-menu .urd-preset-rail .urd-preset-rail-templates {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--urd-color-text) 10%, transparent);
+  border-radius: 0 0 7px 7px;
+}
+
+.urd-preview .urd-preset-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.urd-preview .urd-preset-top {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 4px;
+}
+
+.urd-preview .urd-preset-menu .urd-preset-search {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 18%, transparent);
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: 12px system-ui, sans-serif;
+  padding: 5px 8px;
+  outline: none;
+}
+
+.urd-preview .urd-preset-menu .urd-preset-search:focus {
+  border-color: var(--urd-admin-accent, #5f6a75);
+}
+
+.urd-preview .urd-preset-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 6px 6px;
+}
+
+.urd-preview .urd-preset-menu .urd-preset-close {
+  transform: none;
+  opacity: 1;
+  border: 0;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+/* The change-layout strip (variant B): a horizontal row of thumbnails that
+   sticks to the screen while you are in the section (like the toolbar, right
+   below it), so the choice stays visible in tall sections too. The same
+   z as the nav and the toolbar: later in the DOM wins, so the strip sits above
+   the floating menu. */
+.urd-preview .urd-layout-strip {
+  position: sticky;
+  top: 96px;
+  z-index: 100001;
+  display: flex;
+  gap: 6px;
+  margin: 0 8px;
+  padding: 6px;
+  overflow-x: auto;
+  background: color-mix(in srgb, var(--urd-color-bg) 88%, transparent);
+  backdrop-filter: blur(4px);
+  border: 1px solid color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 45%, transparent);
+  border-radius: 10px;
+}
+
+/* The gallery menu variant (a personal choice in the Urd settings): the same
+   cards in a 2-column panel anchored at the toolbar, also sticky. */
+.urd-preview .urd-layout-menu {
+  position: sticky;
+  top: 96px;
+  z-index: 100001;
+  width: min(320px, calc(100% - 16px));
+  margin: 0 8px 0 auto;
+  padding: 6px;
+  background: var(--urd-color-bg);
+  border: 1px solid color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 45%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+.urd-preview .urd-layout-menu .urd-layout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.urd-preview .urd-layout-menu .urd-layout-close {
+  transform: none;
+  opacity: 1;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
+.urd-preview .urd-layout-strip .urd-layout-card,
+.urd-preview .urd-layout-menu .urd-layout-card {
+  flex: 0 0 108px;
+  display: grid;
+  gap: 4px;
+  padding: 4px;
+  transform: none;
+  opacity: 1;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 14%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--urd-color-text);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.urd-preview .urd-layout-strip .urd-layout-card:hover,
+.urd-preview .urd-layout-menu .urd-layout-card:hover {
+  border-color: var(--urd-admin-accent, #5f6a75);
+  background: color-mix(in srgb, var(--urd-admin-accent, #5f6a75) 12%, transparent);
+}
+
+.urd-preview .urd-layout-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 18%, transparent);
+  border-radius: 5px;
+}
+
+.urd-preview .urd-layout-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.urd-preview .urd-layout-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Block search in the + New block menu (variant B): a field at the top; during
+   an active search the menu's ordinary content is hidden and a flat, ranked
+   result list is shown instead (the urd-searching class). */
+.urd-preview .urd-block-search {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 20%, transparent);
+  border-radius: 7px;
+  padding: 4px 8px;
+}
+
+.urd-preview .urd-block-search svg {
+  flex: none;
+  opacity: 0.55;
+}
+
+.urd-preview .urd-block-search input {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 13px system-ui, sans-serif;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+}
+
+.urd-preview .urd-add-block-menu.urd-searching > :not(.urd-block-search):not(.urd-block-hits) {
+  display: none;
+}
+
+/* The hits take part in the menu's own grid (two columns) */
+.urd-preview .urd-block-hits {
+  display: contents;
+}
+
+.urd-preview .urd-block-hits .urd-search-empty {
+  grid-column: 1 / -1;
+  padding: 6px 8px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--urd-color-text) 55%, transparent);
+}
+
+/* The My templates category: a 2-column grid with a large thumbnail, name and
+   delete button (revealed on hover over the card) */
+.urd-preview .urd-template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 2px 0 2px;
+}
+
+.urd-preview .urd-template-card {
+  position: relative;
+}
+
+.urd-preview .urd-preset-menu .urd-template-pick {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  transform: none;
+  opacity: 1;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--urd-category-color, var(--urd-color-text)) 30%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.urd-preview .urd-preset-menu .urd-template-pick:hover {
+  border-color: color-mix(in srgb, var(--urd-category-color, var(--urd-admin-accent, #5f6a75)) 75%, transparent);
+  background: color-mix(in srgb, var(--urd-category-color, var(--urd-admin-accent, #5f6a75)) 12%, transparent);
+}
+
+.urd-preview .urd-template-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 18%, transparent);
+  border-radius: 5px;
+}
+
+.urd-preview .urd-template-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.urd-preview .urd-template-name {
+  font-size: 11.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.urd-preview .urd-preset-menu .urd-template-delete {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: none;
+  transform: none;
+  opacity: 1;
+  border: 0;
+  border-radius: 5px;
+  padding: 2px 6px;
+  cursor: pointer;
+  background: rgb(224 82 82 / 25%);
+  color: #ffb4b4;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.urd-preview .urd-template-card:hover .urd-template-delete {
+  display: block;
+}
+
+.urd-preview .urd-template-empty {
+  padding: 8px 10px 10px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--urd-color-text) 55%, transparent);
+}
+
+/* The save-as-template button in the section toolbar: the SVG icon is centered */
+.urd-preview .urd-section-toolbar .urd-save-template {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* The group headings in the "All" view stick to the top of the scroll pane,
+   so you always see which group the cards below belong to. The text is tinted in
+   the category color (F2). */
+.urd-preview .urd-preset-group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--urd-color-bg);
+  padding: 8px 2px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--urd-category-color, var(--urd-color-text)) 70%, var(--urd-color-text));
+}
+
+/* The preset grid (G2): cards with a thumbnail above the name; the hint lives in
+   the tooltip (title), not as a permanent subtitle. */
+.urd-preview .urd-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 2px 0 6px;
+}
+
+.urd-preview .urd-preset-menu .urd-preset-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  transform: none;
+  opacity: 1;
+  border: 1px solid color-mix(in srgb, var(--urd-category-color, var(--urd-color-text)) 30%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.urd-preview .urd-preset-menu .urd-preset-card:hover {
+  background: color-mix(in srgb, var(--urd-category-color, var(--urd-admin-accent, #5f6a75)) 12%, transparent);
+  border-color: color-mix(in srgb, var(--urd-category-color, var(--urd-admin-accent, #5f6a75)) 75%, transparent);
+}
+
+/* Auto-generated thumbnail (preset-thumb.js): a schematic sketch of the section */
+.urd-preview .urd-preset-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--urd-color-text) 20%, transparent);
+  border-radius: 5px;
+}
+
+.urd-preview .urd-preset-thumb svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.urd-preview .urd-preset-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The section toolbar (move up/down, fit height, delete) - visible
+   only while the pointer is inside the section; always on top (above lifted
+   blocks) */
+.urd-preview .urd-section-toolbar {
+  /* Counter-scaling: the handle should keep the same on-screen size as
+     the admin panels at any zoom level (urd-zoom). */
+  transform: scale(var(--urd-chrome-scale, 1));
+  transform-origin: top right;
+  /* Sticky inside the section (not absolute): in sections taller than the viewport the
+     toolbar follows along, so the "+ card" button can always be reached when adding
+     repeatedly. The toolbar is the section's only in-flow element, so it always starts
+     at the top. The sticky offset reads the measured menu height (--urd-nav-h from
+     nav.js), so the bar parks right below the menu instead of at a guessed fixed offset. */
+  position: sticky;
+  top: calc(var(--urd-nav-h, 56px) + 8px * var(--urd-chrome-scale, 1));
+  display: none;
+  gap: 2px;
+  width: fit-content;
+  margin-left: auto;
+  padding: 8px 8px 0 0;
+  z-index: 100001;
+}
+
+.urd-preview .urd-section:hover > .urd-section-toolbar {
+  display: flex;
+}
+
+.urd-preview .urd-section-toolbar button {
+  border: 0;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--urd-color-surface) 85%, transparent);
+  color: var(--urd-color-text);
+  font-size: 13px;
+  line-height: 1;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.urd-preview .urd-section-toolbar button:hover {
+  background: var(--urd-admin-accent, #5f6a75);
+  color: var(--urd-admin-accent-text, #fff);
+}
+
+/* Clean view: the editor can hide every editing handle, so the page
+   is seen exactly as visitors see it */
+.urd-preview.urd-chrome-off .urd-add-block,
+.urd-preview.urd-chrome-off .urd-add-section,
+.urd-preview.urd-chrome-off .urd-edit-toolbar,
+.urd-preview.urd-chrome-off .urd-edit-resize,
+.urd-preview.urd-chrome-off .urd-edit-rotate,
+.urd-preview.urd-chrome-off .urd-video-shield,
+.urd-preview.urd-chrome-off .urd-section-toolbar,
+.urd-preview.urd-chrome-off .urd-section-resize,
+.urd-preview.urd-chrome-off .urd-section-resize-top,
+.urd-preview.urd-chrome-off .urd-smart-guide,
+.urd-preview.urd-chrome-off .urd-page-guide,
+.urd-preview.urd-chrome-off .urd-marquee,
+.urd-preview.urd-chrome-off .urd-multi-toolbar,
+.urd-preview.urd-chrome-off .urd-collection-image-adder,
+.urd-preview.urd-chrome-off .urd-product-adder,
+.urd-preview.urd-chrome-off .urd-collection-placeholder,
+.urd-preview.urd-chrome-off .urd-grid-overlay {
+  display: none !important;
+}
+
+.urd-preview.urd-chrome-off .urd-collection-editable:hover,
+.urd-preview.urd-chrome-off .urd-collection-image-edit:hover {
+  outline: none;
+}
+
+.urd-preview.urd-chrome-off .urd-editable:hover {
+  outline: none;
+}
+
+.urd-preview.urd-chrome-off .urd-multi-selected {
+  outline: none;
+}
+
+/* Editorial markers sit as classes on the section itself and cannot
+   be display:none-d: the effects are zeroed instead, so Clean view is
+   identical to the published page. */
+.urd-preview.urd-chrome-off .urd-attention {
+  outline: none;
+}
+
+/* The height handle at the bottom edge of the section: the hit zone is 10px, but the
+   visible line sits exactly on the section edge */
+/* Above the block lift on hover and selection (99998/99999): a block that hangs
+   past the section edge must never be able to steal the grip on the section line */
+.urd-preview .urd-section-resize {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(10px * var(--urd-chrome-scale, 1));
+  cursor: ns-resize;
+  z-index: 100000;
+}
+
+/* The hover line is drawn as an inset shadow on the section itself, so it always
+   sits exactly on the visible bottom edge */
+.urd-preview .urd-section:has(> .urd-section-resize:hover),
+.urd-preview .urd-section:has(> .urd-section-resize:active) {
+  box-shadow: inset 0 -2px 0 var(--urd-admin-accent, #5f6a75);
+}
+
+/* The top edge handle: mirrors the bottom handle, but adds or removes air at the TOP
+   of the section (the blocks come along, the content stays put) */
+.urd-preview .urd-section-resize-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(10px * var(--urd-chrome-scale, 1));
+  cursor: ns-resize;
+  z-index: 100000;
+}
+
+.urd-preview .urd-section:has(> .urd-section-resize-top:hover),
+.urd-preview .urd-section:has(> .urd-section-resize-top:active) {
+  box-shadow: inset 0 2px 0 var(--urd-admin-accent, #5f6a75);
+}
+
+/* The block chrome wins over the section boundaries while a block is hovered or
+   selected: the toolbar (with ⠿) sits above the block's top edge, that is, inside
+   the boundary band, and the strips (z 100000, above the block lift) would otherwise
+   steal the clicks there. The strips in the block's own section let clicks through, and
+   so does the previous section's bottom strip (the boundary is shared). The grip on
+   the section line holds as soon as the pointer does not come from the block. */
+.urd-preview .urd-section:has(.urd-editable:hover) > .urd-section-resize,
+.urd-preview .urd-section:has(.urd-editable:hover) > .urd-section-resize-top,
+.urd-preview .urd-section:has(.urd-block.urd-selected) > .urd-section-resize-top,
+.urd-preview .urd-section:has(+ .urd-add-section + .urd-section .urd-editable:hover) > .urd-section-resize {
+  pointer-events: none;
+}
+
+/* A directional cursor while a section boundary is dragged (preview-edit sets
+   the class on the root element): arrow down when dragging down, arrow up when
+   dragging up. !important because the cursor otherwise follows the element beneath. */
+html.urd-drag-down,
+html.urd-drag-down * {
+  cursor: s-resize !important;
+}
+
+html.urd-drag-up,
+html.urd-drag-up * {
+  cursor: n-resize !important;
+}

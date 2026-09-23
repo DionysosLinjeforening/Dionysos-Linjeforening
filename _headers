@@ -1,0 +1,52 @@
+# Security headers for Cloudflare Pages.
+# The CSP is strict: only own scripts and styles; images also as data:/blob:
+# (unpublished uploads and generated textures). frame-ancestors 'self' lets
+# the admin editor show the page in an iframe but blocks foreign sites.
+# frame-src has DELIBERATE exceptions for the privacy-friendly embeds that
+# ship with Urd: the video block's two hosts (youtube-nocookie and Vimeo with
+# dnt=1) and the map plugin's OpenStreetMap. Other embeds require the owner
+# to add the host here (see ADR-0006; the plugin manifest declares the need
+# and admin shows the exact line).
+
+# Speculation Rules are delivered as a SEPARATE file via a header (not inline):
+# an inline <script type="speculationrules"> would require
+# 'inline-speculation-rules' in script-src, the project's first script-src
+# exception, contrary to the very reason boot.js is a separate file. The rule
+# set (prefetch and prerender of internal links, admin excluded) lives in
+# speculation-rules.json and can be tuned there.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com https://www.openstreetmap.org; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Speculation-Rules: "/speculation-rules.json"
+
+# The rule set MUST be served as application/speculationrules+json, otherwise
+# the browser rejects it. Cloudflare Pages serves .json as application/json,
+# so the type is set explicitly here.
+/speculation-rules.json
+  Content-Type: application/speculationrules+json
+
+# Media is content-addressed (media/<slug>-<hash>.webp): new content gets a new
+# name, so the files can be cached forever without revalidation. The heaviest
+# bytes on a page are thus fetched only once per visitor.
+/media/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The engine is version-addressed (assets/engine/<version>/..., ADR-0013): a
+# new engine gets a new folder, so the modules can be cached forever. The rule
+# is DELIBERATELY version-neutral (/assets/engine/* covers any versioned
+# folder), so this hand-edited file never needs changing on an engine bump.
+# The stable plugin API shells in /assets/urd/ stay OUTSIDE and revalidate
+# normally.
+/assets/engine/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# base.css is always referenced with the content stamp ?v=<hash> from the HTML
+# shells: new content gives a new URL, so it too can be cached forever.
+/assets/styles/base.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/admin/*
+  X-Robots-Tag: noindex

@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 4,
+  "meta": {
+    "id": "checkout",
+    "title": "Checkout"
+  },
+  "sections": [
+    {
+      "id": "sec-2a87c725",
+      "version": 1,
+      "preset": "checkout",
+      "size": {
+        "minHeight": "560px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-e5b17ff5",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Checkout</h2>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 28,
+              "w": 50,
+              "h": 38,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-f87d5062",
+          "type": "checkout",
+          "version": 1,
+          "props": {
+            "recipient": "",
+            "endpoint": "",
+            "vipps": "",
+            "currency": "kr"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 25,
+              "y": 96,
+              "w": 50,
+              "h": 430,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    },
+    {
+      "id": "sec-b2cc572b",
+      "version": 1,
+      "preset": "contact",
+      "size": {
+        "minHeight": "320px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "surface"
+            }
+          },
+          {
+            "type": "glow",
+            "version": 1,
+            "props": {
+              "x": 0.2,
+              "y": 0.8,
+              "color": "accent",
+              "radius": 0.5,
+              "opacity": 0.2
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-2cc550e5",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Contact us</h2>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 10,
+              "y": 32,
+              "w": 40,
+              "h": 36,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-814c2628",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<p><b>Email:</b> post@yourclub.org</p><p><b>Phone:</b> 12 34 56 78</p><p><b>Address:</b> 1 Street Name, Anytown</p>",
+            "align": "left",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 10,
+              "y": 84,
+              "w": 36,
+              "h": 130,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-09427335",
+          "type": "button",
+          "version": 1,
+          "props": {
+            "label": "Send email",
+            "page": null,
+            "href": "mailto:post@dinforening.no",
+            "style": "primary"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 60,
+              "y": 100,
+              "w": 22,
+              "h": 40,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    }
+  ]
+}

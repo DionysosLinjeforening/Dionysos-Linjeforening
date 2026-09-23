@@ -1,0 +1,25 @@
+{
+  "engine": "0.7.2",
+  "schemaVersion": 1,
+  "ownedPaths": [
+    "index.html",
+    "404.html",
+    "urd.json",
+    "_headers",
+    "speculation-rules.json",
+    "README.md",
+    "readme/**",
+    "admin/**",
+    "assets/engine/**",
+    "assets/urd/**",
+    "assets/styles/base.css",
+    "functions/**"
+  ],
+  "userPaths": [
+    "content/**",
+    "media/**",
+    "plugins/**",
+    "sitemap.xml",
+    "robots.txt"
+  ]
+}

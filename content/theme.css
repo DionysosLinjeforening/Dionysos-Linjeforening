@@ -1,0 +1,32 @@
+:root {
+  color-scheme: light dark;
+  --urd-color-bg: #f6faf8;
+  --urd-base-bg: #f6faf8;
+  --urd-color-surface: #ffffff;
+  --urd-base-surface: #ffffff;
+  --urd-color-text: #000000;
+  --urd-base-text: #000000;
+  --urd-color-accent: #15b39a;
+  --urd-base-accent: #15b39a;
+  --urd-color-accent-text: #04241d;
+  --urd-base-accent-text: #04241d;
+  --urd-font-heading: 'Courier New', monospace;
+  --urd-font-body: Georgia, 'Times New Roman', serif;
+  --urd-radius-sm: 6px;
+  --urd-radius-md: 12px;
+  --urd-space-section: clamp(3rem, 8vw, 6rem);
+}
+@supports (color: light-dark(#000, #fff)) {
+  :root {
+    --urd-color-bg: light-dark(#f6faf8, #000000);
+    --urd-base-bg: light-dark(#f6faf8, #000000);
+    --urd-color-surface: light-dark(#ffffff, #000000);
+    --urd-base-surface: light-dark(#ffffff, #000000);
+    --urd-color-text: light-dark(#000000, #eaf1ed);
+    --urd-base-text: light-dark(#000000, #eaf1ed);
+    --urd-color-accent: light-dark(#15b39a, #22c3a8);
+    --urd-base-accent: light-dark(#15b39a, #22c3a8);
+  }
+  :root[data-urd-theme="light"] { color-scheme: light; }
+  :root[data-urd-theme="dark"] { color-scheme: dark; }
+}

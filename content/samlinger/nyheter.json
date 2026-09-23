@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "nyheter",
+  "name": "Nyheter",
+  "kind": "news",
+  "entries": [
+    {
+      "id": "velkommen-til-urd",
+      "title": "Velkommen til Urd",
+      "date": "2026-07-19",
+      "text": "Dette er et eksempelinnslag fra samlingen «Nyheter». Rediger eller slett det i Samlinger-panelet i admin."
+    },
+    {
+      "id": "samlinger-er-her",
+      "title": "Samlinger er her",
+      "date": "2026-07-12",
+      "text": "Nyheter, oppslag og publikasjoner kan nå bo som data: skriv et innslag, og alle visningene oppdateres."
+    },
+    {
+      "id": "eldre-eksempel",
+      "title": "Et eldre eksempel",
+      "date": "2026-06-30",
+      "text": "Innslag sorteres nyeste først, og arkivvisningen grupperer per år."
+    }
+  ]
+}

@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 4,
+  "meta": {
+    "id": "hjem",
+    "title": "Hjem",
+    "description": "Eksempelsiden til Urd: en avhengighetsfri nettsidebygger der repoet er nettsiden.",
+    "og": {
+      "title": "Urd - nettsidebyggeren"
+    }
+  },
+  "sections": [
+    {
+      "id": "sec-46b91629",
+      "version": 1,
+      "preset": "hero",
+      "size": {
+        "minHeight": "1360px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "glow",
+            "version": 1,
+            "props": {
+              "x": 0.85,
+              "y": 0.3,
+              "color": "#00a19b",
+              "radius": 0.5,
+              "opacity": 0.35
+            }
+          },
+          {
+            "type": "grain",
+            "version": 1,
+            "props": {
+              "opacity": 0.06
+            }
+          },
+          {
+            "type": "image",
+            "version": 2,
+            "props": {
+              "src": "/media/bakgrunn-a1730034.svg",
+              "fit": "plain",
+              "x": 0.5,
+              "y": 0.5,
+              "size": 1,
+              "opacity": 0.18,
+              "blur": 6,
+              "parallax": 1,
+              "bleed": "none"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-f9389000",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h1>Velkommen til Urd</h1>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 19.4,
+              "y": 256,
+              "w": 16.42,
+              "h": 80,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-9032074e",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<p>Urd er under oppbygging og alt du ser er testing.&nbsp;</p><p>Gjerne følg prosjektet på vår Github side!</p>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 19.4,
+              "y": 320,
+              "w": 27.78,
+              "h": 80,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-1f8cc2e3",
+          "type": "button",
+          "version": 1,
+          "props": {
+            "label": "Les mer",
+            "page": null,
+            "href": "https://github.com/Artiscow/Urd",
+            "style": "secondary"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 19.38,
+              "y": 400,
+              "w": 20,
+              "h": 32,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-ef036d5f",
+          "type": "calendar",
+          "version": 1,
+          "props": {
+            "sources": [
+              "https://calendar.google.com/calendar/ical/74a6de6d28a7a0ec383148bb2f67025d09712386e8b6add3d425fc0d9b5320f7%40group.calendar.google.com/public/basic.ics"
+            ],
+            "view": "list",
+            "limit": 4,
+            "showCategories": true,
+            "showSubscribe": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 59.54,
+              "y": 240,
+              "w": 25.33,
+              "h": 23,
+              "z": 2,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-205e5f2a",
+          "type": "calendar",
+          "version": 1,
+          "props": {
+            "sources": [],
+            "view": "month",
+            "limit": 6,
+            "showCategories": true,
+            "showSubscribe": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 48.89,
+              "y": 240,
+              "w": 40,
+              "h": 275,
+              "z": 3,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    },
+    {
+      "id": "sec-72471997",
+      "version": 1,
+      "preset": "whats-on",
+      "size": {
+        "minHeight": "1280px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "gradient",
+            "version": 1,
+            "props": {
+              "kind": "linear",
+              "stops": [
+                {
+                  "color": "#00fff5",
+                  "share": 50
+                },
+                {
+                  "color": "#db4949",
+                  "share": 50
+                },
+                {
+                  "color": "#00fff5",
+                  "share": 50
+                },
+                {
+                  "color": "#c0ff93",
+                  "share": 50
+                },
+                {
+                  "color": "#00fff5",
+                  "share": 50
+                },
+                {
+                  "color": "#a593ff",
+                  "share": 50
+                },
+                {
+                  "color": "#00fff5",
+                  "share": 50
+                },
+                {
+                  "color": "#ff93fb",
+                  "share": 50
+                }
+              ],
+              "angle": 325,
+              "x": 0.5,
+              "y": 0.5,
+              "animation": "pan-loop",
+              "opacity": 1
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-6f6ffd6e",
+          "type": "text",
+          "version": 1,
+          "decor": false,
+          "props": {
+            "html": "<h3>Wow! Jeg ser farger!</h3><h3><span style=\"font-family: Georgia, &quot;Times New Roman&quot;, serif;\"><br></span></h3><h3><font face=\"Georgia, Times New Roman, serif\" style=\"font-weight: normal;\">Fint du er positiv</font></h3>",
+            "align": "left",
+            "box": true,
+            "boxStyle": {
+              "glass": true
+            }
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 13.19,
+              "y": 288,
+              "w": 28.26,
+              "h": 272,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-2d9ebc4e",
+          "type": "map",
+          "version": 1,
+          "props": {
+            "location": "https://www.openstreetmap.org/#map=18/63.426891/10.396446",
+            "lat": 63.426891,
+            "lon": 10.396446,
+            "zoom": 18,
+            "height": 600
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 55.09,
+              "y": 160,
+              "w": 36.57,
+              "h": 608,
+              "z": 3,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "id": "calendar",
+  "name": "Calendar",
+  "names": {
+    "nb": "Kalender",
+    "nn": "Kalender",
+    "en-GB": "Calendar",
+    "se": "Kaleandar",
+    "tr": "Takvim"
+  },
+  "locales": true,
+  "version": "1.0.0",
+  "requiresEngine": ">=0.6.8 <1.0.0",
+  "entry": "index.js",
+  "provides": {
+    "blocks": [
+      "calendar"
+    ],
+    "sectionPresets": [
+      "whats-on"
+    ],
+    "backgrounds": [],
+    "animations": [],
+    "templates": []
+  }
+}

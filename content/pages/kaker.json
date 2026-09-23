@@ -1,0 +1,583 @@
+{
+  "schemaVersion": 4,
+  "meta": {
+    "id": "kaker",
+    "title": "Kaker"
+  },
+  "sections": [
+    {
+      "id": "sec-ec0c9b36",
+      "version": 1,
+      "preset": "steps",
+      "size": {
+        "minHeight": "1344px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "image",
+            "version": 2,
+            "props": {
+              "src": "/media/bakgrunn-f5939d16.webp",
+              "fit": "plain",
+              "x": 0.5,
+              "y": 0.5,
+              "size": 1.5,
+              "opacity": 1,
+              "blur": 5,
+              "parallax": 0,
+              "bleed": "none"
+            }
+          },
+          {
+            "type": "gradient",
+            "version": 1,
+            "props": {
+              "kind": "linear",
+              "stops": [
+                {
+                  "color": "#00fff5",
+                  "share": 50
+                },
+                {
+                  "color": "#00a19b",
+                  "share": 50
+                }
+              ],
+              "angle": 160,
+              "x": 0.5,
+              "y": 0.5,
+              "animation": "pan-loop",
+              "opacity": 0.64
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-03906bae",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>1</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6.04,
+              "y": 140,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88,
+          "hover": {
+            "type": "hover-lift",
+            "version": 1,
+            "props": {}
+          }
+        },
+        {
+          "id": "blk-b35fc0b9",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Meld deg inn</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6.04,
+              "y": 220,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.01,
+          "hover": {
+            "type": "hover-lift",
+            "version": 1,
+            "props": {}
+          }
+        },
+        {
+          "id": "blk-278624b1",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>2</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.54,
+              "y": 140,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.1,
+          "hover": {
+            "type": "hover-lift",
+            "version": 1,
+            "props": {}
+          }
+        },
+        {
+          "id": "blk-a9b75c31",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Betal kontingent</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.54,
+              "y": 220,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.11,
+          "hover": {
+            "type": "hover-lift",
+            "version": 1,
+            "props": {}
+          }
+        },
+        {
+          "id": "blk-c5630a48",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>3</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69.04,
+              "y": 140,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.2,
+          "hover": {
+            "type": "hover-lift",
+            "version": 1,
+            "props": {}
+          }
+        },
+        {
+          "id": "blk-457e6ff7",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Bli med på det neste</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69.04,
+              "y": 220,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.21000000000001,
+          "hover": {
+            "type": "hover-lift",
+            "version": 1,
+            "props": {}
+          }
+        },
+        {
+          "id": "blk-ab7c96c6",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>7</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 408,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.6
+        },
+        {
+          "id": "blk-3d08e8f8",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Nytt steg</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 488,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.61
+        },
+        {
+          "id": "blk-5aca6edf",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>8</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.5,
+              "y": 408,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.7
+        },
+        {
+          "id": "blk-78c5da9b",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Nytt steg</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.5,
+              "y": 488,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.71000000000001
+        },
+        {
+          "id": "blk-e276f578",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>9</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69,
+              "y": 408,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.8
+        },
+        {
+          "id": "blk-ef756276",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Nytt steg</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69,
+              "y": 488,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.81
+        },
+        {
+          "id": "blk-df582603",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>10</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 680,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.9
+        },
+        {
+          "id": "blk-9270cb4b",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Nytt steg</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 760,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.91000000000001
+        },
+        {
+          "id": "blk-9cbf56f3",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>11</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.5,
+              "y": 680,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 89
+        },
+        {
+          "id": "blk-6082f23f",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Nytt steg</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.5,
+              "y": 760,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 89.01
+        },
+        {
+          "id": "blk-19cc1541",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>12</h3>",
+            "align": "center",
+            "box": false,
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69,
+              "y": 680,
+              "w": 25,
+              "h": 72,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 89.1
+        },
+        {
+          "id": "blk-1b28fd80",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Nytt steg</h3><p>Forklar dette steget kort.</p>",
+            "align": "center",
+            "box": true
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69,
+              "y": 760,
+              "w": 25,
+              "h": 160,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 89.11
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      },
+      "animation": {
+        "type": "stagger",
+        "version": 1,
+        "props": {
+          "duration": 600,
+          "step": 90,
+          "effect": "slide-up",
+          "pattern": "sequence"
+        }
+      },
+      "hover": null
+    },
+    {
+      "id": "sec-4c908354",
+      "version": 1,
+      "preset": "blank",
+      "size": {
+        "minHeight": "640px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-92417959",
+          "type": "video",
+          "version": 1,
+          "decor": false,
+          "props": {
+            "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "title": "Video"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 25.2,
+              "y": 32,
+              "w": 49.66,
+              "h": 544,
+              "z": 2,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    }
+  ]
+}

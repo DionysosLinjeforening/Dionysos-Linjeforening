@@ -1,0 +1,277 @@
+{
+  "schemaVersion": 3,
+  "site": {
+    "title": "Urd",
+    "lang": "no",
+    "description": "Urd sin testside",
+    "icon": "/media/ikon-9740643c.webp",
+    "setup": true
+  },
+  "breakpoints": {
+    "mobile": 640
+  },
+  "layout": {
+    "contentWidth": 1440,
+    "gutter": 6
+  },
+  "grid": {
+    "size": 16,
+    "snap": true
+  },
+  "theme": {
+    "version": 1,
+    "tokens": {
+      "color": {
+        "bg": "#f6faf8",
+        "surface": "#ffffff",
+        "text": "#000000",
+        "accent": "#15b39a",
+        "accent-text": "#04241d"
+      },
+      "font": {
+        "heading": "'Courier New', monospace",
+        "body": "Georgia, 'Times New Roman', serif"
+      },
+      "radius": {
+        "sm": "6px",
+        "md": "12px"
+      },
+      "space": {
+        "section": "clamp(3rem, 8vw, 6rem)"
+      }
+    },
+    "alt": {
+      "tokens": {
+        "color": {
+          "bg": "#000000",
+          "surface": "#000000",
+          "text": "#eaf1ed",
+          "accent": "#22c3a8",
+          "accent-text": "#04241d"
+        }
+      },
+      "auto": false
+    }
+  },
+  "pages": [
+    {
+      "id": "hjem",
+      "title": "Hjem",
+      "path": "/",
+      "file": "content/pages/hjem.json"
+    },
+    {
+      "id": "om-oss",
+      "title": "Om oss",
+      "path": "/om-oss",
+      "file": "content/pages/om-oss.json"
+    },
+    {
+      "id": "kontakt",
+      "title": "Kontakt",
+      "path": "/kontakt",
+      "file": "content/pages/kontakt.json"
+    },
+    {
+      "id": "kaker",
+      "title": "Kaker",
+      "path": "/kaker",
+      "file": "content/pages/kaker.json"
+    },
+    {
+      "id": "checkout",
+      "title": "Checkout",
+      "path": "/checkout",
+      "file": "content/pages/checkout.json"
+    },
+    {
+      "id": "shop-fp",
+      "title": "Shop FP",
+      "path": "/shop-fp",
+      "file": "content/pages/shop-fp.json"
+    },
+    {
+      "id": "shop",
+      "title": "Shop",
+      "path": "/shop",
+      "file": "content/pages/shop.json"
+    }
+  ],
+  "nav": {
+    "version": 1,
+    "scroll": "shrink",
+    "logo": {
+      "type": "image",
+      "value": "/media/logo-91963a12.svg",
+      "size": 40,
+      "order": "image-first",
+      "bold": false,
+      "italic": false,
+      "font": "'Trebuchet MS', sans-serif",
+      "radius": 0
+    },
+    "items": [
+      {
+        "label": "Hjem",
+        "page": "hjem"
+      },
+      {
+        "label": "Om oss",
+        "page": "om-oss"
+      },
+      {
+        "label": "Kontakt",
+        "page": "kontakt"
+      },
+      {
+        "label": "Kaker",
+        "page": "kaker"
+      },
+      {
+        "label": "Butikk",
+        "page": "shop",
+        "children": [
+          {
+            "label": "Shop FP",
+            "page": "shop-fp"
+          },
+          {
+            "label": "Checkout",
+            "page": "checkout"
+          },
+          {
+            "label": "Butikk",
+            "page": "shop"
+          }
+        ]
+      }
+    ],
+    "layout": "left",
+    "sticky": false,
+    "cart": {
+      "show": true,
+      "href": "/checkout"
+    },
+    "style": {
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "#0e1a27",
+              "opacity": 0.45
+            }
+          }
+        ]
+      },
+      "topGap": false,
+      "textColor": "#ffffff",
+      "hoverTextColor": "#00fff5",
+      "blur": false
+    },
+    "overlay": true,
+    "variant": "floating-tab"
+  },
+  "footer": {
+    "version": 1,
+    "show": true,
+    "align": "left",
+    "brand": {
+      "title": "Urd",
+      "tagline": "Bygg din egen nettside for din lille forening helt gratis!",
+      "mode": "both",
+      "logo": "/media/footer-logo-84804c80.svg",
+      "logoHeight": 40
+    },
+    "columns": [
+      {
+        "title": "Utforsk",
+        "links": [
+          {
+            "label": "Hjem",
+            "page": "hjem"
+          },
+          {
+            "label": "Om oss",
+            "page": "om-oss"
+          },
+          {
+            "label": "Kontakt",
+            "page": "kontakt"
+          },
+          {
+            "label": "Kaker",
+            "page": "kaker"
+          },
+          {
+            "label": "Kakevideoen",
+            "href": "/kaker#sec-4c908354"
+          }
+        ]
+      },
+      {
+        "title": "Følg oss",
+        "links": [
+          {
+            "label": "Vi har ingen steder du kan følge oss",
+            "href": "#"
+          }
+        ]
+      }
+    ],
+    "social": [
+      {
+        "icon": "facebook",
+        "url": "https://facebook.com"
+      },
+      {
+        "icon": "instagram",
+        "url": "https://instagram.com"
+      },
+      {
+        "icon": "linkedin",
+        "url": "https://linkedin.com"
+      },
+      {
+        "icon": "youtube",
+        "url": "https://youtube.com"
+      }
+    ],
+    "background": {
+      "version": 1,
+      "layers": [
+        {
+          "type": "glow",
+          "version": 1,
+          "props": {
+            "x": 0.12,
+            "y": 0,
+            "color": "#00a19b",
+            "radius": 0.6,
+            "opacity": 0.45
+          }
+        },
+        {
+          "type": "grain",
+          "version": 1,
+          "props": {
+            "opacity": 0.08
+          }
+        }
+      ]
+    },
+    "baseline": [
+      {
+        "label": "Personvern",
+        "href": "#"
+      },
+      {
+        "label": "Laget med Urd",
+        "href": "#"
+      }
+    ],
+    "copyright": "© Min forening"
+  }
+}

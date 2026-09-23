@@ -1,0 +1,21 @@
+{
+  "id": "lang-sv",
+  "name": "Swedish language pack",
+  "names": {
+    "nb": "Svensk språkpakke",
+    "nn": "Svensk språkpakke",
+    "en-GB": "Swedish language pack",
+    "se": "Ruoŧagiel giellapáhkka",
+    "tr": "İsveççe dil paketi"
+  },
+  "version": "1.0.0",
+  "requiresEngine": ">=0.6.8 <1.0.0",
+  "languages": [
+    {
+      "code": "sv",
+      "name": "Svenska",
+      "site": true,
+      "admin": false
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "analytics",
+  "name": "Analytics",
+  "names": {
+    "nb": "Analyse",
+    "nn": "Analyse",
+    "en-GB": "Analytics",
+    "se": "Analysa",
+    "tr": "Analitik"
+  },
+  "version": "1.0.0",
+  "requiresEngine": ">=0.6.8 <1.0.0",
+  "entry": "index.js",
+  "provides": {
+    "blocks": [],
+    "sectionPresets": [],
+    "backgrounds": [],
+    "animations": [],
+    "templates": []
+  },
+  "csp": {
+    "scriptSrc": ["https://static.cloudflareinsights.com"],
+    "connectSrc": ["https://cloudflareinsights.com"]
+  },
+  "config": {
+    "token": ""
+  }
+}

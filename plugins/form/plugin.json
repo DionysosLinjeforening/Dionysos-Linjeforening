@@ -1,0 +1,26 @@
+{
+  "id": "form",
+  "name": "Form",
+  "names": {
+    "nb": "Skjema",
+    "nn": "Skjema",
+    "en-GB": "Form",
+    "se": "Skovvi",
+    "tr": "Form"
+  },
+  "locales": true,
+  "version": "1.0.0",
+  "requiresEngine": ">=0.6.8 <1.0.0",
+  "entry": "index.js",
+  "provides": {
+    "blocks": [
+      "form"
+    ],
+    "sectionPresets": [
+      "contact-form"
+    ],
+    "backgrounds": [],
+    "animations": [],
+    "templates": []
+  }
+}

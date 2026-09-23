@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "produkter",
+  "name": "Produkter",
+  "kind": "products",
+  "entries": [
+    {
+      "id": "sjokoladekake",
+      "title": "Sjokoladekake",
+      "text": "Saftig sjokoladekake med mørk ganache. Bakes på bestilling.",
+      "price": 350,
+      "badge": "Bestselger",
+      "sizes": ["Liten", "Stor"]
+    },
+    {
+      "id": "kanelboller",
+      "title": "Kanelboller (6 stk.)",
+      "text": "Nybakte kanelboller med kardemomme.",
+      "price": 120,
+      "memberPrice": 100
+    },
+    {
+      "id": "marsipankake",
+      "title": "Marsipankake",
+      "text": "Klassisk marsipankake med vaniljekrem og bær.",
+      "price": 420,
+      "sizes": ["8 biter", "12 biter"],
+      "colors": [
+        { "name": "Grønn" },
+        { "name": "Rosa" }
+      ]
+    }
+  ]
+}

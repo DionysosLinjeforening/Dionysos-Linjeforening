@@ -1,0 +1,913 @@
+{
+  "schemaVersion": 4,
+  "meta": {
+    "id": "shop-fp",
+    "title": "Shop FP"
+  },
+  "sections": [
+    {
+      "id": "sec-8483370e",
+      "version": 1,
+      "preset": "shop-hero",
+      "size": {
+        "minHeight": "400px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          },
+          {
+            "type": "glow",
+            "version": 1,
+            "props": {
+              "x": 0.8,
+              "y": 0.25,
+              "color": "accent",
+              "radius": 0.6,
+              "opacity": 0.28
+            }
+          },
+          {
+            "type": "grain",
+            "version": 1,
+            "props": {
+              "opacity": 0.05
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-531e13b3",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h1>New season, new favourites</h1>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 48,
+              "w": 52,
+              "h": 96,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 48
+        },
+        {
+          "id": "blk-9c4be0b5",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<p>Fresh items in the shop - order today and they will be ready for you.</p>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 152,
+              "w": 40,
+              "h": 48,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 48.01
+        },
+        {
+          "id": "blk-960a6f7b",
+          "type": "button",
+          "version": 1,
+          "props": {
+            "label": "Shop now",
+            "page": null,
+            "href": "#",
+            "style": "primary"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 216,
+              "w": 17,
+              "h": 42,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 48.02
+        },
+        {
+          "id": "blk-b7c15b8f",
+          "type": "image",
+          "version": 1,
+          "props": {
+            "src": "",
+            "alt": "Replace this image",
+            "fit": "cover",
+            "radius": "md",
+            "href": null
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 62,
+              "y": 40,
+              "w": 32,
+              "h": 300,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 48.13
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    },
+    {
+      "id": "sec-fcadbcc3",
+      "version": 1,
+      "preset": "shop",
+      "size": {
+        "minHeight": "544px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-79d0d0eb",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Shop</h2>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 28,
+              "w": 50,
+              "h": 38,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-b3fed215",
+          "type": "cart",
+          "version": 1,
+          "props": {
+            "variant": "button",
+            "href": "",
+            "currency": "kr"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 78,
+              "y": 88,
+              "w": 16,
+              "h": 48,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-5eaa23fa",
+          "type": "product",
+          "version": 1,
+          "props": {
+            "collection": null,
+            "limit": 0,
+            "columns": 0,
+            "currency": "kr"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 176,
+              "w": 88,
+              "h": 320,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    },
+    {
+      "id": "sec-6363b07b",
+      "version": 1,
+      "preset": "shop-categories",
+      "size": {
+        "minHeight": "360px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-d481b3f6",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Categories</h2>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 28,
+              "w": 60,
+              "h": 38,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-779e4bb5",
+          "type": "image",
+          "version": 1,
+          "props": {
+            "src": "",
+            "alt": "Replace this image",
+            "fit": "cover",
+            "radius": "md",
+            "href": null
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 88,
+              "w": 21,
+              "h": 170,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88
+        },
+        {
+          "id": "blk-5b195b4a",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Clothing</h3>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 266,
+              "w": 21,
+              "h": 34,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.01
+        },
+        {
+          "id": "blk-f0686cf0",
+          "type": "image",
+          "version": 1,
+          "props": {
+            "src": "",
+            "alt": "Replace this image",
+            "fit": "cover",
+            "radius": "md",
+            "href": null
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 29.5,
+              "y": 88,
+              "w": 21,
+              "h": 170,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.1
+        },
+        {
+          "id": "blk-cd442e28",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Equipment</h3>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 29.5,
+              "y": 266,
+              "w": 21,
+              "h": 34,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.11
+        },
+        {
+          "id": "blk-6a3b1a95",
+          "type": "image",
+          "version": 1,
+          "props": {
+            "src": "",
+            "alt": "Replace this image",
+            "fit": "cover",
+            "radius": "md",
+            "href": null
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 53,
+              "y": 88,
+              "w": 21,
+              "h": 170,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.2
+        },
+        {
+          "id": "blk-7c68fb3a",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Accessories</h3>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 53,
+              "y": 266,
+              "w": 21,
+              "h": 34,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.21000000000001
+        },
+        {
+          "id": "blk-2c48144b",
+          "type": "image",
+          "version": 1,
+          "props": {
+            "src": "",
+            "alt": "Replace this image",
+            "fit": "cover",
+            "radius": "md",
+            "href": null
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 76.5,
+              "y": 88,
+              "w": 21,
+              "h": 170,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.3
+        },
+        {
+          "id": "blk-082c70ca",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Gift cards</h3>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 76.5,
+              "y": 266,
+              "w": 21,
+              "h": 34,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.31
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      },
+      "theme": "soft"
+    },
+    {
+      "id": "sec-15048144",
+      "version": 1,
+      "preset": "shop-showcase",
+      "size": {
+        "minHeight": "340px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-55a75ff9",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Made to last</h2>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 56,
+              "w": 52,
+              "h": 100,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 56
+        },
+        {
+          "id": "blk-8dfd1bba",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<p>Selected items we are extra proud of - take a closer look here.</p>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 164,
+              "w": 42,
+              "h": 56,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 56.01
+        },
+        {
+          "id": "blk-fea4e62f",
+          "type": "button",
+          "version": 1,
+          "props": {
+            "label": "See the selection",
+            "page": null,
+            "href": "#",
+            "style": "primary"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 236,
+              "w": 18,
+              "h": 42,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 56.02
+        },
+        {
+          "id": "blk-f2282510",
+          "type": "image",
+          "version": 1,
+          "props": {
+            "src": "",
+            "alt": "Replace this image",
+            "fit": "cover",
+            "radius": "md",
+            "href": null
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 62,
+              "y": 48,
+              "w": 32,
+              "h": 240,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 56.13
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      },
+      "theme": "deep"
+    },
+    {
+      "id": "sec-cbc6d3ef",
+      "version": 1,
+      "preset": "shop-trust",
+      "size": {
+        "minHeight": "300px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "bg"
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-652304c9",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Shop with confidence</h2>",
+            "align": "left",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 28,
+              "w": 60,
+              "h": 38,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-ca3cf3b5",
+          "type": "icon",
+          "version": 1,
+          "props": {
+            "glyph": "✓",
+            "color": "accent",
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 16.5,
+              "y": 88,
+              "w": 4,
+              "h": 52,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88
+        },
+        {
+          "id": "blk-2eec0a4d",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Easy ordering</h3><p>Order in a minute - no account, no tracking.</p>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 6,
+              "y": 148,
+              "w": 25,
+              "h": 96,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.01
+        },
+        {
+          "id": "blk-e960aa9a",
+          "type": "icon",
+          "version": 1,
+          "props": {
+            "glyph": "↻",
+            "color": "accent",
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 48,
+              "y": 88,
+              "w": 4,
+              "h": 52,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.1
+        },
+        {
+          "id": "blk-2e48b3ad",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Easy returns</h3><p>Changed your mind? Let us know and we will sort an exchange or return.</p>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 37.5,
+              "y": 148,
+              "w": 25,
+              "h": 96,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.11
+        },
+        {
+          "id": "blk-14a5666d",
+          "type": "icon",
+          "version": 1,
+          "props": {
+            "glyph": "✉",
+            "color": "accent",
+            "size": 44
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 79.5,
+              "y": 88,
+              "w": 4,
+              "h": 52,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.2
+        },
+        {
+          "id": "blk-8206e53d",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h3>Quick help</h3><p>Send us a message and we will answer as soon as we can.</p>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 69,
+              "y": 148,
+              "w": 25,
+              "h": 96,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          },
+          "mobileOrder": 88.21000000000001
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      },
+      "theme": "muted"
+    },
+    {
+      "id": "sec-a2633d55",
+      "version": 1,
+      "preset": "cta",
+      "size": {
+        "minHeight": "280px"
+      },
+      "grid": null,
+      "background": {
+        "version": 1,
+        "layers": [
+          {
+            "type": "color",
+            "version": 1,
+            "props": {
+              "value": "surface"
+            }
+          },
+          {
+            "type": "glow",
+            "version": 1,
+            "props": {
+              "x": 0.5,
+              "y": 0.5,
+              "color": "accent",
+              "radius": 0.7,
+              "opacity": 0.3
+            }
+          }
+        ]
+      },
+      "blocks": [
+        {
+          "id": "blk-2fd30ab7",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<h2>Join the community</h2>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 20,
+              "y": 56,
+              "w": 60,
+              "h": 40,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-2ed608f4",
+          "type": "text",
+          "version": 1,
+          "props": {
+            "html": "<p>One sentence about why it is worth it.</p>",
+            "align": "center",
+            "box": false
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 25,
+              "y": 104,
+              "w": 50,
+              "h": 26,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        },
+        {
+          "id": "blk-be5625b9",
+          "type": "button",
+          "version": 1,
+          "props": {
+            "label": "Join us",
+            "page": null,
+            "href": "#",
+            "style": "primary"
+          },
+          "animation": null,
+          "frames": {
+            "desktop": {
+              "x": 42,
+              "y": 148,
+              "w": 16,
+              "h": 42,
+              "z": 1,
+              "rot": 0
+            },
+            "mobile": null
+          }
+        }
+      ],
+      "responsive": {
+        "mobile": {
+          "mode": "auto",
+          "attention": null
+        }
+      }
+    }
+  ]
+}
