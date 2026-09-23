@@ -22,19 +22,19 @@
     "version": 1,
     "tokens": {
       "color": {
-        "bg": "#f6faf8",
+        "bg": "#faf5f6",
         "surface": "#ffffff",
-        "text": "#000000",
-        "accent": "#15b39a",
-        "accent-text": "#04241d"
+        "text": "#241a1d",
+        "accent": "#a41034",
+        "accent-text": "#ffffff"
       },
       "font": {
         "heading": "'Courier New', monospace",
         "body": "Georgia, 'Times New Roman', serif"
       },
       "radius": {
-        "sm": "6px",
-        "md": "12px"
+        "sm": "5px",
+        "md": "10px"
       },
       "space": {
         "section": "clamp(3rem, 8vw, 6rem)"
@@ -43,11 +43,11 @@
     "alt": {
       "tokens": {
         "color": {
-          "bg": "#000000",
-          "surface": "#000000",
-          "text": "#eaf1ed",
-          "accent": "#22c3a8",
-          "accent-text": "#04241d"
+          "bg": "#171015",
+          "surface": "#22181c",
+          "text": "#f1e6ea",
+          "accent": "#b81944",
+          "accent-text": "#2a0f18"
         }
       },
       "auto": false
@@ -59,100 +59,40 @@
       "title": "Hjem",
       "path": "/",
       "file": "content/pages/hjem.json"
-    },
-    {
-      "id": "om-oss",
-      "title": "Om oss",
-      "path": "/om-oss",
-      "file": "content/pages/om-oss.json"
-    },
-    {
-      "id": "kontakt",
-      "title": "Kontakt",
-      "path": "/kontakt",
-      "file": "content/pages/kontakt.json"
-    },
-    {
-      "id": "kaker",
-      "title": "Kaker",
-      "path": "/kaker",
-      "file": "content/pages/kaker.json"
-    },
-    {
-      "id": "checkout",
-      "title": "Checkout",
-      "path": "/checkout",
-      "file": "content/pages/checkout.json"
-    },
-    {
-      "id": "shop-fp",
-      "title": "Shop FP",
-      "path": "/shop-fp",
-      "file": "content/pages/shop-fp.json"
-    },
-    {
-      "id": "shop",
-      "title": "Shop",
-      "path": "/shop",
-      "file": "content/pages/shop.json"
     }
   ],
   "nav": {
     "version": 1,
     "scroll": "shrink",
     "logo": {
-      "type": "image",
-      "value": "/media/logo-91963a12.svg",
+      "type": "both",
+      "value": "Dio",
       "size": 40,
       "order": "image-first",
       "bold": false,
       "italic": false,
       "font": "'Trebuchet MS', sans-serif",
-      "radius": 0
+      "radius": 0,
+      "image": "/media/logo-c3ffeb49.webp"
     },
     "items": [
       {
         "label": "Hjem",
         "page": "hjem"
-      },
-      {
-        "label": "Om oss",
-        "page": "om-oss"
-      },
-      {
-        "label": "Kontakt",
-        "page": "kontakt"
-      },
-      {
-        "label": "Kaker",
-        "page": "kaker"
-      },
-      {
-        "label": "Butikk",
-        "page": "shop",
-        "children": [
-          {
-            "label": "Shop FP",
-            "page": "shop-fp"
-          },
-          {
-            "label": "Checkout",
-            "page": "checkout"
-          },
-          {
-            "label": "Butikk",
-            "page": "shop"
-          }
-        ]
       }
     ],
     "layout": "left",
-    "sticky": false,
-    "cart": {
-      "show": true,
-      "href": "/checkout"
-    },
+    "sticky": true,
     "style": {
+      "topGap": false,
+      "textColor": "#ffffff",
+      "hoverTextColor": "#00fff5",
+      "blur": true,
+      "border": {
+        "side": "bottom",
+        "width": 4,
+        "color": "#aa345f"
+      },
       "background": {
         "version": 1,
         "layers": [
@@ -160,30 +100,22 @@
             "type": "color",
             "version": 1,
             "props": {
-              "value": "#0e1a27",
-              "opacity": 0.45
+              "value": "#ae0b7f",
+              "opacity": 1
             }
           }
         ]
-      },
-      "topGap": false,
-      "textColor": "#ffffff",
-      "hoverTextColor": "#00fff5",
-      "blur": false
+      }
     },
-    "overlay": true,
-    "variant": "floating-tab"
+    "overlay": true
   },
   "footer": {
     "version": 1,
     "show": true,
     "align": "left",
     "brand": {
-      "title": "Urd",
-      "tagline": "Bygg din egen nettside for din lille forening helt gratis!",
-      "mode": "both",
-      "logo": "/media/footer-logo-84804c80.svg",
-      "logoHeight": 40
+      "title": "Min forening",
+      "tagline": "Bli med i samtalen. Vi tar imot nye medlemmer hele året."
     },
     "columns": [
       {
@@ -192,22 +124,6 @@
           {
             "label": "Hjem",
             "page": "hjem"
-          },
-          {
-            "label": "Om oss",
-            "page": "om-oss"
-          },
-          {
-            "label": "Kontakt",
-            "page": "kontakt"
-          },
-          {
-            "label": "Kaker",
-            "page": "kaker"
-          },
-          {
-            "label": "Kakevideoen",
-            "href": "/kaker#sec-4c908354"
           }
         ]
       },
@@ -215,17 +131,17 @@
         "title": "Følg oss",
         "links": [
           {
-            "label": "Vi har ingen steder du kan følge oss",
+            "label": "Nyhetsbrev",
             "href": "#"
+          },
+          {
+            "label": "post@dinforening.no",
+            "href": "mailto:post@dinforening.no"
           }
         ]
       }
     ],
     "social": [
-      {
-        "icon": "facebook",
-        "url": "https://facebook.com"
-      },
       {
         "icon": "instagram",
         "url": "https://instagram.com"
@@ -237,6 +153,10 @@
       {
         "icon": "youtube",
         "url": "https://youtube.com"
+      },
+      {
+        "icon": "chat",
+        "url": "https://gffgff"
       }
     ],
     "background": {
@@ -246,18 +166,18 @@
           "type": "glow",
           "version": 1,
           "props": {
-            "x": 0.12,
-            "y": 0,
-            "color": "#00a19b",
-            "radius": 0.6,
-            "opacity": 0.45
+            "x": 0.6,
+            "y": 0.54,
+            "color": "accent",
+            "radius": 0.58,
+            "opacity": 0.8
           }
         },
         {
           "type": "grain",
           "version": 1,
           "props": {
-            "opacity": 0.08
+            "opacity": 0.12
           }
         }
       ]
@@ -272,6 +192,11 @@
         "href": "#"
       }
     ],
-    "copyright": "© Min forening"
+    "copyright": "© Min forening",
+    "cta": {
+      "kind": "newsletter",
+      "label": "Bli medlem",
+      "href": "youtube.com"
+    }
   }
 }
