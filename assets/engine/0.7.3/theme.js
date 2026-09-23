@@ -131,7 +131,22 @@ export function buildThemeCss(theme) {
   // follows the OS and light-dark() carries both sets; a manual choice
   // overrides via [data-urd-theme].
   const hasDual = dualColor.length > 0 || altNonColor.length > 0;
+  // Text on accent surfaces without an accent-text token: today's effective
+  // value (the background colour) is written out so the section roles never
+  // read an undefined base, and modern browsers let contrast-color() choose
+  // black or white against the accent instead. An owner-set token is kept.
+  const hasAccentText = [main, light, dark].some((t) => safeCssValue(t.color?.['accent-text']));
+  const wantsContrast = !hasAccentText && safeCssValue(main.color?.accent);
+  if (wantsContrast && safeCssValue(main.color?.bg)) {
+    fallback.push(`  --urd-color-accent-text: ${main.color.bg};`);
+    fallback.push(`  --urd-base-accent-text: ${main.color.bg};`);
+  }
   let css = `:root {\n  color-scheme: ${hasDual ? 'light dark' : mainScheme};\n${fallback.join('\n')}\n}\n`;
+  if (wantsContrast) {
+    css += '@supports (color: contrast-color(#000)) {\n  :root {\n'
+      + '    --urd-color-accent-text: contrast-color(var(--urd-color-accent));\n'
+      + '    --urd-base-accent-text: contrast-color(var(--urd-base-accent));\n  }\n}\n';
+  }
   if (!hasDual) return css;
 
   const ld = [];

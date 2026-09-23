@@ -1624,6 +1624,18 @@ function initTextToolbar() {
   // the content follows theme switches. execCommand normalizes colors
   // differently (hex/rgb), so matching happens in rgb form. Custom colors
   // deliberately remain detached hex.
+  //
+  // A token is resolved through a rendered probe, never read as the raw
+  // variable text: with a dark variant the variable holds light-dark(...),
+  // which only the computed style turns into the concrete rgb color.
+  const tokenColor = (token) => {
+    const probe = document.createElement('span');
+    probe.style.color = `var(--urd-color-${token})`;
+    (activeText ?? document.body).appendChild(probe);
+    const value = getComputedStyle(probe).color;
+    probe.remove();
+    return value;
+  };
   const normColor = (value) => {
     if (!value) return '';
     const v = String(value).trim().toLowerCase();
@@ -1636,8 +1648,7 @@ function initTextToolbar() {
   };
   const themeify = (token, styleProp) => {
     if (!activeText) return;
-    const target = normColor(getComputedStyle(document.documentElement)
-      .getPropertyValue(`--urd-color-${token}`));
+    const target = normColor(tokenColor(token));
     if (!target) return;
     for (const el of activeText.querySelectorAll('[style], font[color]')) {
       if (styleProp === 'color' && el.tagName === 'FONT' && normColor(el.getAttribute('color')) === target) {
@@ -1682,9 +1693,7 @@ function initTextToolbar() {
   };
   for (const token of ['text', 'accent']) {
     const b = colorBtn('', token === 'text' ? ta('tt.textColorTheme') : ta('tt.accentColorTheme'), () => {
-      const value = getComputedStyle(document.documentElement)
-        .getPropertyValue(`--urd-color-${token}`).trim();
-      exec('foreColor', value);
+      exec('foreColor', tokenColor(token));
       themeify(token, 'color');
     });
     b.className = 'urd-text-swatch';
@@ -1701,9 +1710,7 @@ function initTextToolbar() {
   colorSep.className = 'urd-tt-sep';
   colorRow.appendChild(colorSep);
   colorBtn('<span class="urd-tt-hl">A</span>', ta('tt.hlAccent'), () => {
-    const accent = getComputedStyle(document.documentElement)
-      .getPropertyValue('--urd-color-accent').trim();
-    exec('hiliteColor', accent);
+    exec('hiliteColor', tokenColor('accent'));
     themeify('accent', 'backgroundColor');
   });
   colorBtn('<span class="urd-tt-hl urd-tt-hl-free">A</span>', ta('tt.hlCustom'), () => {
@@ -1971,10 +1978,11 @@ function initTextToolbar() {
     if (target) reposition();
   });
   document.addEventListener('focusout', () => {
-    // Wait a beat: focus may be on its way to the toolbar itself (or the link field).
+    // Wait a beat: focus may be on its way to the toolbar itself, the link
+    // field or the color picker's sliders and fields (a separate card).
     requestAnimationFrame(() => {
       const el = document.activeElement;
-      if (el instanceof HTMLElement && (bar.contains(el) || el.closest('.urd-text[contenteditable="true"]'))) return;
+      if (el instanceof HTMLElement && (bar.contains(el) || el.closest('.urd-text[contenteditable="true"], .urd-cp'))) return;
       // Was the field SWAPPED OUT by a re-render (typography/panel
       // change), not abandoned by the user? Then reposition reconnects
       // via the block id instead of closing the toolbar.

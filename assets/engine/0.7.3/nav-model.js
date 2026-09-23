@@ -128,6 +128,22 @@ function isFloating(variant) {
   return variant === 'floating' || variant === 'floating-square' || variant === 'floating-tab';
 }
 
+/**
+ * How the submenus open on a mouse device: hover opens and closes them
+ * (`hover`, the default), hover opens them and only a click, another item
+ * or a click outside closes them (`stay`), or the pointer does nothing and
+ * only a click opens and closes them (`click`). Touch never gets hover in
+ * any mode. Pure function; an unknown value reads as the default.
+ * @param {object} style nav.style
+ * @returns {{hoverOpens: boolean, hoverCloses: boolean}}
+ */
+export function subOpenMode(style = {}) {
+  const mode = style?.subOpen;
+  if (mode === 'click') return { hoverOpens: false, hoverCloses: false };
+  if (mode === 'stay') return { hoverOpens: true, hoverCloses: false };
+  return { hoverOpens: true, hoverCloses: true };
+}
+
 export function navClasses(site) {
   let classes = `urd-nav urd-nav-${site.nav.layout ?? 'right'}`;
   const variant = site.nav.variant;
@@ -158,7 +174,97 @@ export function navClasses(site) {
   // Submenu design (default is the card style).
   const sub = site.nav.style?.subStyle;
   if (['flat', 'pills', 'lines', 'flyout'].includes(sub)) classes += ` urd-nav-sub-${sub}`;
+  // Inset (additive since v0.7, ADR-0023): the bar's contents line up with
+  // the content edge while the background keeps the full width. Only the
+  // top bar can be inset; the pill has its own width and the column none.
+  const isBar = !isFloating(variant) && variant !== 'side-left' && variant !== 'side-right';
+  if (site.nav.style?.inset === true && isBar) classes += ' urd-nav-inset';
+  // The logo image follows the scroll shrink (additive since v0.7).
+  if (site.nav.style?.shrinkLogo === true) classes += ' urd-nav-shrink-logo';
+  // Border and shadow (additive since v0.7): the side the border sits on
+  // and the shadow strength are allowlisted classes; the border's width and
+  // colour are variables set by nav.js. The column draws no border, and the
+  // pill has its glow instead of a shadow.
+  const isSide = variant === 'side-left' || variant === 'side-right';
+  const borderSide = site.nav.style?.border?.side;
+  if (['bottom', 'top', 'both', 'all'].includes(borderSide) && !isSide) classes += ` urd-nav-border-${borderSide}`;
+  const shadow = site.nav.style?.shadow;
+  if (['soft', 'strong'].includes(shadow) && isBar) classes += ` urd-nav-shadow-${shadow}`;
   return classes;
+}
+
+/**
+ * The border's width in px (nav.style.border.width), clamped to 1-8;
+ * anything invalid yields 1.
+ */
+export function clampBorderWidth(width) {
+  const n = Number(width);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(8, Math.max(1, Math.round(n)));
+}
+
+/**
+ * The bounds of the size fields (nav.style.*, nav.logo.*), shared with the
+ * schema and the editor's nav-size module (a parity test ties them together).
+ */
+export const NAV_SIZE_BOUNDS = {
+  padY: [0, 64],
+  textSize: [12, 28],
+  padX: [0, 80],
+  gap: [0, 64],
+  pillWidth: [480, 1920],
+  shrinkTo: [0.3, 0.8],
+  logoSize: [12, 128],
+};
+
+/** A number clamped to [min, max] with the given decimals; undefined when the value is not a number. */
+function clampNum(value, [min, max], decimals = 0) {
+  if (value == null || value === '') return undefined;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return undefined;
+  const f = 10 ** decimals;
+  return Math.min(max, Math.max(min, Math.round(n * f) / f));
+}
+
+/**
+ * The inline size values for the nav element (ADR-0023): custom properties
+ * the CSS reads with today's look as the fallback, the menu font size and
+ * the logo image height. The mobile overrides (nav.style.mobile and
+ * nav.logo.mobileSize) are chosen here from the breakpoint state at render
+ * time: the burger class is also set by content folding on desktop, and a
+ * class rule can never beat an inline value, so the choice belongs in JS.
+ * An empty style yields empty vars.
+ * @param {object} [style] nav.style
+ * @param {object} [logo] nav.logo
+ * @param {{mobile?: boolean}} [state] Whether the mobile breakpoint matches
+ * @returns {{vars: Record<string, string>, font: string|undefined, logoSize: number}}
+ */
+export function navSizeVars(style = {}, logo = {}, { mobile = false } = {}) {
+  const s = style ?? {};
+  const m = mobile && s.mobile && typeof s.mobile === 'object' ? s.mobile : {};
+  const vars = {};
+  const padY = clampNum(m.padY ?? s.padY, NAV_SIZE_BOUNDS.padY);
+  if (padY !== undefined) vars['--urd-nav-pad-y'] = `${padY}px`;
+  const padX = clampNum(s.padX, NAV_SIZE_BOUNDS.padX);
+  if (padX !== undefined) vars['--urd-nav-pad-x'] = `${padX}px`;
+  const gap = clampNum(s.gap, NAV_SIZE_BOUNDS.gap);
+  if (gap !== undefined) vars['--urd-nav-gap'] = `${gap}px`;
+  // The pill width applies above the breakpoint only: on a phone the pill
+  // keeps the full width minus its air, as without the field.
+  if (!mobile) {
+    if (s.pillWidth === 'content') {
+      vars['--urd-nav-pill-w'] = 'min(var(--urd-canvas-w, 100%), calc(100% - 2 * var(--urd-canvas-gutter-desktop, 0px)))';
+    } else {
+      const w = clampNum(s.pillWidth, NAV_SIZE_BOUNDS.pillWidth);
+      if (w !== undefined) vars['--urd-nav-pill-w'] = `${w}px`;
+    }
+  }
+  const shrinkTo = clampNum(s.shrinkTo, NAV_SIZE_BOUNDS.shrinkTo, 2);
+  if (shrinkTo !== undefined) vars['--urd-nav-shrink-to'] = String(shrinkTo);
+  const textSize = clampNum(m.textSize ?? s.textSize, NAV_SIZE_BOUNDS.textSize);
+  const l = logo ?? {};
+  const logoSize = clampNum(mobile ? (l.mobileSize ?? l.size) : l.size, NAV_SIZE_BOUNDS.logoSize) ?? 32;
+  return { vars, font: textSize !== undefined ? `${textSize}px` : undefined, logoSize };
 }
 
 /**

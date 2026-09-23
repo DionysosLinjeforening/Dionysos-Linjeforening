@@ -14,6 +14,7 @@
 // always after the admin dictionary is loaded: ta() is safe even at module
 // level here.
 import { ta } from './i18n.js';
+import { nativeAnchoring, anchorName } from './anchored.js';
 
 let panel = null;
 let teardown = null;
@@ -24,6 +25,7 @@ const THEME_TOKENS = [['text', ta('lbl.textColor')], ['accent', ta('setup.accent
 
 export function closeColorPicker() {
   teardown?.();
+  if (panel?.popover && panel.matches(':popover-open')) panel.hidePopover();
   panel?.remove();
   panel = null;
   teardown = null;
@@ -45,6 +47,12 @@ const hexToRgb = (hex) => {
 };
 
 const rgbToHex = (r, g, b) => '#' + [r, g, b].map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
+
+/** A computed `rgb(r, g, b)` / `rgba(...)` string as #rrggbb; anything else gives null. */
+const computedHex = (value) => {
+  const m = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/.exec(String(value ?? ''));
+  return m ? rgbToHex(Number(m[1]), Number(m[2]), Number(m[3])) : null;
+};
 
 function rgbToHsv(r, g, b) {
   r /= 255; g /= 255; b /= 255;
@@ -227,16 +235,22 @@ export function openColorPicker(anchor, { value = '#ffffff', onpick } = {}) {
     return dot;
   };
 
-  // The theme colors: read live from the CSS variables, so they always follow the current theme.
+  // The theme colors: resolved live through a rendered probe, so they
+  // follow the current theme and a light-dark() variable gives its
+  // concrete side rather than the function text.
   const tokens = el2('div', 'urd-cp-tokens');
-  const rootStyle = getComputedStyle(document.documentElement);
+  const probe = el2('span');
+  document.body.appendChild(probe);
   for (const [token, name] of THEME_TOKENS) {
-    const hex = rootStyle.getPropertyValue(`--urd-color-${token}`).trim();
+    probe.style.color = `var(--urd-color-${token})`;
+    const color = getComputedStyle(probe).color;
+    const hex = computedHex(color) ?? color;
     if (!hex) continue;
     const dot = swatch(hex);
     dot.title = ta('cp.tokenTitleShort', { name });
     tokens.appendChild(dot);
   }
+  probe.remove();
   if (tokens.children.length) {
     panel.appendChild(el2('div', 'urd-cp-label', ta('cp.themeColors')));
     panel.appendChild(tokens);
@@ -291,16 +305,6 @@ export function openColorPicker(anchor, { value = '#ffffff', onpick } = {}) {
   document.body.appendChild(panel);
   paint();
 
-  // Placement: PREFERABLY above the anchor (the text toolbar sits above the text,
-  // so the picker must not cover what is being edited), otherwise below, clamped
-  // inside the viewport.
-  const rect = anchor.getBoundingClientRect();
-  const W = 236;
-  const left = Math.max(8, Math.min(rect.left, window.innerWidth - W - 8));
-  const above = rect.top - panel.offsetHeight - 8;
-  panel.style.left = `${left}px`;
-  panel.style.top = `${above >= 8 ? above : Math.min(rect.bottom + 8, window.innerHeight - panel.offsetHeight - 8)}px`;
-
   const saveRecent = () => {
     if (!lastPicked) return;
     const next = [lastPicked, ...readStore(RECENT_KEY).filter((c) => c !== lastPicked)].slice(0, 8);
@@ -311,6 +315,32 @@ export function openColorPicker(anchor, { value = '#ffffff', onpick } = {}) {
     closeColorPicker();
   };
   close.addEventListener('click', dismiss);
+
+  // Placement: PREFERABLY above the anchor (the text toolbar sits above the text,
+  // so the picker must not cover what is being edited), otherwise below.
+  if (nativeAnchoring()) {
+    // Anchored in the top layer: the browser flips it below when it does not
+    // fit, and light dismiss closes it on an outside click or Escape.
+    const name = anchorName('urd-cp');
+    anchor.style.setProperty('anchor-name', name);
+    panel.popover = 'auto';
+    panel.style.setProperty('position-anchor', name);
+    panel.addEventListener('toggle', (event) => {
+      if (event.newState === 'closed' && panel === event.target && panel.isConnected) dismiss();
+    });
+    teardown = () => anchor.style.removeProperty('anchor-name');
+    panel.showPopover();
+    return;
+  }
+
+  // The measuring branch: clamped inside the viewport.
+  const rect = anchor.getBoundingClientRect();
+  const W = 236;
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - W - 8));
+  const above = rect.top - panel.offsetHeight - 8;
+  panel.style.left = `${left}px`;
+  panel.style.top = `${above >= 8 ? above : Math.min(rect.bottom + 8, window.innerHeight - panel.offsetHeight - 8)}px`;
+
   const onDown = (event) => {
     if (!panel.contains(event.target)) dismiss();
   };

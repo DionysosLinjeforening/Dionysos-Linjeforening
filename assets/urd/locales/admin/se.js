@@ -3,4 +3,4 @@
  * denne fra både editor-bundelen og preview-chromen, uavhengig av
  * motorversjon. Selve tekstene bor i den versjonerte motoren.
  */
-export { default } from '../../../engine/0.7.2/locales/admin/se.js';
+export { default } from '../../../engine/0.7.3/locales/admin/se.js';

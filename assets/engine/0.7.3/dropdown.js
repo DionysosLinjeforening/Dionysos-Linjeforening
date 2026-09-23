@@ -9,7 +9,14 @@
  *
  * The buttons do not steal focus (mousedown is prevented), so a text field's
  * selection survives the choice - which is why it fits in the text toolbar.
+ *
+ * Two branches (ADR-0011 addendum, anchored.js decides): with the Popover
+ * API and anchor positioning the menu opens in the top layer under its
+ * button, flipped by the browser when it does not fit, with light dismiss
+ * for the outside click and Escape; otherwise it is appended to body,
+ * position: fixed, placed by measuring, and closed by the listeners below.
  */
+import { nativeAnchoring, anchorName } from './anchored.js';
 
 let openMenu = null;
 let teardown = null;
@@ -39,6 +46,13 @@ const DD_CSS = `
 .urd-dd-menu button:hover { background: rgb(255 255 255 / 10%); }
 .urd-dd-menu button.selected { background: color-mix(in srgb, #7c5cff 30%, transparent); }
 body.urd-chrome-off .urd-dd, body.urd-chrome-off .urd-dd-menu { display: none !important; }
+@supports (anchor-name: --a) {
+  .urd-dd-menu[popover] { inset: auto; margin: 6px 0 0; position-area: block-end span-inline-end; }
+  .urd-dd-menu[popover]:not(:popover-open) { display: none; }
+  @supports (position-try-fallbacks: flip-block) {
+    .urd-dd-menu[popover] { position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline; }
+  }
+}
 `;
 
 function injectCss() {
@@ -51,7 +65,8 @@ function injectCss() {
 
 export function closeDropdowns() {
   teardown?.();
-  openMenu?.remove();
+  if (openMenu?.popover) openMenu.hidePopover();
+  else openMenu?.remove();
   openMenu = null;
   teardown = null;
 }
@@ -87,13 +102,8 @@ export function createDropdown({ value = null, options = [], onchange, title = '
   // Focus stays where it is (the text selection survives the choice).
   root.addEventListener('mousedown', (event) => event.preventDefault());
 
-  btn.addEventListener('click', () => {
-    if (openMenu) {
-      closeDropdowns();
-      return;
-    }
-    const menu = document.createElement('div');
-    menu.className = 'urd-dd-menu';
+  const fillMenu = (menu) => {
+    menu.replaceChildren();
     for (const [v, label] of options) {
       const choice = document.createElement('button');
       choice.type = 'button';
@@ -106,6 +116,40 @@ export function createDropdown({ value = null, options = [], onchange, title = '
       });
       menu.appendChild(choice);
     }
+  };
+
+  if (nativeAnchoring()) {
+    // The menu lives inside the root (the top layer lifts it out of any
+    // clipping), the button is its invoker, and the toggle event fills it
+    // with the current choice marked on every open.
+    const name = anchorName('urd-dd');
+    btn.style.setProperty('anchor-name', name);
+    btn.setAttribute('popovertarget', name.slice(2));
+    const menu = document.createElement('div');
+    menu.className = 'urd-dd-menu';
+    menu.id = name.slice(2);
+    menu.popover = 'auto';
+    menu.style.setProperty('position-anchor', name);
+    menu.addEventListener('toggle', (event) => {
+      if (event.newState === 'open') {
+        fillMenu(menu);
+        openMenu = menu;
+      } else if (openMenu === menu) {
+        openMenu = null;
+      }
+    });
+    root.appendChild(menu);
+    return { el: root, set };
+  }
+
+  btn.addEventListener('click', () => {
+    if (openMenu) {
+      closeDropdowns();
+      return;
+    }
+    const menu = document.createElement('div');
+    menu.className = 'urd-dd-menu';
+    fillMenu(menu);
     // The focus guard must cover the menu itself too (it lives in body, outside root).
     menu.addEventListener('mousedown', (event) => event.preventDefault());
     document.body.appendChild(menu);

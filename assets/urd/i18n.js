@@ -5,4 +5,4 @@
  * /assets/engine/<version>/; this shell re-exports from there and is updated
  * at each phase release. Never hardcode the versioned path in a plugin.
  */
-export * from '../engine/0.7.2/i18n.js';
+export * from '../engine/0.7.3/i18n.js';

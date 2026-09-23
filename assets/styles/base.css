@@ -618,7 +618,7 @@ html {
   border: 0;
   padding: 0;
   cursor: pointer;
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   background: var(--urd-share-color, var(--urd-color-accent));
   text-decoration: none;
   font: inherit;
@@ -792,7 +792,7 @@ html {
   align-self: flex-start;
   padding: 3px 9px;
   background: var(--urd-color-accent);
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   border-radius: 999px;
   font-size: 0.72em;
   font-weight: 650;
@@ -856,7 +856,7 @@ html {
   border: none;
   border-radius: var(--urd-radius-sm, 6px);
   background: var(--urd-color-accent);
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   font: inherit;
   font-weight: 600;
   font-size: 0.9em;
@@ -1016,7 +1016,7 @@ html {
   place-items: center;
   padding: 0 4px;
   background: var(--urd-color-accent);
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   border-radius: 999px;
   font-size: 0.68em;
   font-weight: 700;
@@ -1155,7 +1155,7 @@ html {
   display: block;
   padding: 11px 14px;
   background: var(--urd-color-accent);
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   border-radius: var(--urd-radius-sm, 6px);
   text-align: center;
   text-decoration: none;
@@ -1253,7 +1253,7 @@ html {
   border: none;
   border-radius: var(--urd-radius-sm, 6px);
   background: var(--urd-color-accent);
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -1658,6 +1658,26 @@ body.urd-chrome-off .urd-text-toolbar {
   border-radius: 10px;
   box-shadow: 0 12px 36px rgb(0 0 0 / 55%);
   font: 12px/1.4 system-ui, sans-serif;
+}
+
+/* The anchored branch (anchored.js, ADR-0011 addendum): above the toolbar
+   button, flipped below by the browser when it does not fit. */
+@supports (anchor-name: --a) {
+  .urd-cp[popover] {
+    inset: auto;
+    margin: 0 0 8px;
+    position-area: block-start span-inline-end;
+  }
+
+  .urd-cp[popover]:not(:popover-open) {
+    display: none;
+  }
+
+  @supports (position-try-fallbacks: flip-block) {
+    .urd-cp[popover] {
+      position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+    }
+  }
 }
 
 .urd-cp-head {
@@ -2850,26 +2870,55 @@ body:has(dialog:modal) {
 
 /* Navigation */
 .urd-nav {
-  /* The base padding is set by the size classes (urd-nav-size-*); the pill
-     scales it down with calc, so size and variant compose.
-     --urd-nav-shrink is the scroll shrink (urd-nav-compact on the host):
-     factor 1 when not shrunk, so every variant composes with it. */
-  --urd-nav-pad: calc(var(--urd-nav-base-pad, 0.9rem) * var(--urd-nav-shrink, 1));
+  /* The base padding: an explicit thickness (--urd-nav-pad-y, inline from
+     nav.js, ADR-0023) wins over the size preset (--urd-nav-size-pad from
+     urd-nav-size-*); the pill scales only the preset, so size and variant
+     compose. --urd-nav-shrink is the scroll shrink (set on the nav by the
+     host's compact state): factor 1 when not shrunk. */
+  --urd-nav-base-pad: var(--urd-nav-pad-y, var(--urd-nav-size-pad, 0.9rem));
+  --urd-nav-pad: calc(var(--urd-nav-base-pad) * var(--urd-nav-shrink, 1));
+  /* The side padding: an explicit value (--urd-nav-pad-x, inline) or the
+     fluid clamp. The mobile panel and the side-to-bar fallback read the
+     same variable, and the inset rule below raises it to the content edge. */
+  --urd-nav-px: var(--urd-nav-pad-x, clamp(1rem, 4vw, 2.5rem));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: var(--urd-nav-pad) clamp(1rem, 4vw, 2.5rem);
+  padding: var(--urd-nav-pad) var(--urd-nav-px);
   /* Background and blur live in variables (set by nav.js from nav.style):
      submenus and the mobile panel reuse the same surface as the menu itself.
      Blur has to go through a custom property because backdrop-filter does not inherit. */
   background: var(--urd-nav-bg, color-mix(in srgb, var(--urd-color-surface) 85%, transparent));
-  backdrop-filter: var(--urd-nav-blur, blur(8px));
   color: var(--urd-color-text);
   /* Anchor point for the mobile panel, and its own stacking context so dropdowns and
      the panel sit above following content even when the menu is not sticky */
   position: relative;
   z-index: 5000;
+}
+
+/* The blur is drawn by a pseudo-element behind the content, not by the nav
+   itself: an element with backdrop-filter is the backdrop root for its
+   descendants, so a submenu inside a blurred nav would only ever see the
+   bar, never the page behind it. The pseudo sits below the layer backdrop
+   (.urd-nav-bg) in paint order, so the layers are drawn over the blur. */
+.urd-nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  backdrop-filter: var(--urd-nav-blur, blur(8px));
+  pointer-events: none;
+}
+
+/* The column scrolls its own content, so the blur stays on the column itself. */
+.urd-nav-side-host .urd-nav::before {
+  display: none;
+}
+
+.urd-nav-side-host .urd-nav {
+  backdrop-filter: var(--urd-nav-blur, blur(8px));
 }
 
 .urd-preview .urd-nav {
@@ -2910,13 +2959,17 @@ body:has(dialog:modal) {
   translate: 0 calc(-100% - 24px);
 }
 
-.urd-nav-compact {
-  --urd-nav-shrink: 0.5;
+/* The compact factor lives on the nav (the host carries the state class):
+   nav.style.shrinkTo sets --urd-nav-shrink-to inline on the nav, and the
+   logo image reads --urd-nav-shrink from there. */
+.urd-nav-compact .urd-nav {
+  --urd-nav-shrink: var(--urd-nav-shrink-to, 0.5);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .urd-nav-scroll,
-  .urd-nav-scroll .urd-nav {
+  .urd-nav-scroll .urd-nav,
+  .urd-nav-scroll .urd-nav-shrink-logo .urd-nav-logo img {
     transition: none;
   }
 }
@@ -2932,13 +2985,26 @@ body:has(dialog:modal) {
 }
 
 .urd-nav-logo img {
-  height: var(--urd-logo-size, 2rem);
+  /* The drawn size derives from the base (--urd-logo-base, inline from
+     nav.js), so the scroll shrink below can scale it. */
+  --urd-logo-size: var(--urd-logo-base, 2rem);
+  height: var(--urd-logo-size);
   display: block;
   /* Large logos grow OUT of the bar (into the padding and the content below),
      not the bar itself - the menu height is not driven by the image. The margin
      scales with the image height, so the contribution to the bar height is constant
      at any size (the fixed part is calibrated against the 2rem logo). */
-  margin-block: calc(-1 * var(--urd-nav-pad) + 2px - (var(--urd-logo-size, 2rem) - 2rem) / 2);
+  margin-block: calc(-1 * var(--urd-nav-pad) + 2px - (var(--urd-logo-size) - 2rem) / 2);
+}
+
+/* The logo image follows the scroll shrink (nav.style.shrinkLogo): the same
+   factor as the padding, 1 outside the compact state. */
+.urd-nav-shrink-logo .urd-nav-logo img {
+  --urd-logo-size: calc(var(--urd-logo-base, 2rem) * var(--urd-nav-shrink, 1));
+}
+
+.urd-nav-scroll .urd-nav-shrink-logo .urd-nav-logo img {
+  transition: height 0.22s ease, margin 0.22s ease;
 }
 
 .urd-nav-list {
@@ -2949,7 +3015,9 @@ body:has(dialog:modal) {
      the tool cluster is taller than the text items) */
   align-self: stretch;
   align-items: center;
-  gap: 1.25rem;
+  /* The item spacing (nav.style.gap, inline from nav.js); the mobile panel
+     and the column list keep their own gap. */
+  gap: var(--urd-nav-gap, 1.25rem);
   list-style: none;
 }
 
@@ -3079,7 +3147,7 @@ body:not(.urd-mobile) .urd-nav:not(.urd-nav-mobile) .urd-nav-toggle span {
   place-items: center;
   padding: 0 3px;
   background: var(--urd-color-accent);
-  color: var(--urd-color-bg);
+  color: var(--urd-color-accent-text, var(--urd-color-bg));
   border-radius: 999px;
   font-size: 0.6rem;
   font-weight: 700;
@@ -3279,7 +3347,7 @@ body.urd-mobile .urd-nav.urd-nav-open .urd-nav-list,
   left: 0;
   right: 0;
   margin: 0;
-  padding: 0.75rem clamp(1rem, 4vw, 2.5rem) 1rem;
+  padding: 0.75rem var(--urd-nav-px) 1rem;
   background: var(--urd-nav-sub-bg, color-mix(in srgb, var(--urd-color-surface) 85%, transparent));
   backdrop-filter: var(--urd-nav-blur, blur(8px));
   box-shadow: 0 12px 24px rgb(0 0 0 / 15%);
@@ -3364,12 +3432,14 @@ body.urd-mobile .urd-nav-sub,
 }
 
 .urd-nav-var-floating {
-  /* Padding through the variable, not padding-block: the logo image's negative
-     margin trick is calibrated against --urd-nav-pad and has to follow it.
-     The pill scales the base padding down, so the size choice composes. */
-  --urd-nav-pad: calc(var(--urd-nav-base-pad, 0.9rem) * 0.67 * var(--urd-nav-shrink, 1));
+  /* Padding through the base variable, not padding-block: the logo image's
+     negative margin trick is calibrated against --urd-nav-pad and has to
+     follow it. The pill scales the size preset down, so the size choice
+     composes; an explicit thickness is drawn as set.
+     The width is nav.style.pillWidth (inline from nav.js) or 1100px. */
+  --urd-nav-base-pad: var(--urd-nav-pad-y, calc(var(--urd-nav-size-pad, 0.9rem) * 0.67));
   margin: 0.75rem auto 0;
-  width: min(1100px, calc(100% - 2rem));
+  width: min(var(--urd-nav-pill-w, 1100px), calc(100% - 2rem));
   border-radius: 999px;
 }
 
@@ -3396,21 +3466,68 @@ body.urd-mobile .urd-nav-sub,
 }
 
 /* Four sizes (nav.style.size): md is the default and
-   needs no class. The base padding also drives the logo calibration and the
-   submenu anchor, so everything follows the size. */
+   needs no class. The preset padding also drives the logo calibration and the
+   submenu anchor, so everything follows the size; an explicit thickness or
+   text size (inline from nav.js) overrides the preset. */
 .urd-nav-size-sm {
-  --urd-nav-base-pad: 0.55rem;
+  --urd-nav-size-pad: 0.55rem;
   font-size: 0.85rem;
 }
 
 .urd-nav-size-lg {
-  --urd-nav-base-pad: 1.25rem;
+  --urd-nav-size-pad: 1.25rem;
   font-size: 1.05rem;
 }
 
 .urd-nav-size-xl {
-  --urd-nav-base-pad: 1.7rem;
+  --urd-nav-size-pad: 1.7rem;
   font-size: 1.15rem;
+}
+
+/* Border (nav.style.border): the side is the class, the width and colour
+   are variables from nav.js; the default is a hairline in the text colour. */
+.urd-nav-border-bottom,
+.urd-nav-border-top,
+.urd-nav-border-both,
+.urd-nav-border-all {
+  --urd-nav-border: var(--urd-nav-border-w, 1px) solid var(--urd-nav-border-c, color-mix(in srgb, currentColor 18%, transparent));
+}
+
+.urd-nav-border-bottom {
+  border-bottom: var(--urd-nav-border);
+}
+
+.urd-nav-border-top {
+  border-top: var(--urd-nav-border);
+}
+
+.urd-nav-border-both {
+  border-block: var(--urd-nav-border);
+}
+
+.urd-nav-border-all {
+  border: var(--urd-nav-border);
+}
+
+/* Shadow (nav.style.shadow) under the top bar; the pill has its glow instead. */
+.urd-nav-shadow-soft {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 10%);
+}
+
+.urd-nav-shadow-strong {
+  box-shadow: 0 8px 28px rgb(0 0 0 / 25%);
+}
+
+/* Inset (nav.style.inset, ADR-0023): the bar's contents line up with the
+   content edge of the sections (the same rule as .urd-canvas: the larger of
+   the gutter and the margin the design width leaves), while the bar's
+   background keeps the full width. Desktop only, like the canvas gutter. */
+body:not(.urd-mobile) .urd-nav-inset {
+  --urd-nav-px: max(
+    var(--urd-nav-pad-x, clamp(1rem, 4vw, 2.5rem)),
+    var(--urd-canvas-gutter-desktop, 24px),
+    calc((100% - var(--urd-canvas-w, 100%)) / 2)
+  );
 }
 
 /* Side menu (nav.variant side-left/side-right): a fixed column along
@@ -3605,7 +3722,7 @@ body.urd-mobile .urd-nav-side-host .urd-nav {
   align-items: center;
   height: auto;
   overflow: visible;
-  padding: var(--urd-nav-pad) clamp(1rem, 4vw, 2.5rem);
+  padding: var(--urd-nav-pad) var(--urd-nav-px);
 }
 
 body.urd-mobile .urd-nav-side-host .urd-nav-tools {

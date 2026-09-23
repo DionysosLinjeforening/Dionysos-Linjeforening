@@ -4,4 +4,4 @@
  * so the same absolute path works from both the engine and the editor bundle
  * regardless of engine version.
  */
-export * from '../engine/0.7.2/language-packs.js';
+export * from '../engine/0.7.3/language-packs.js';
