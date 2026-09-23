@@ -154,7 +154,9 @@
           "type": "calendar",
           "version": 1,
           "props": {
-            "sources": [],
+            "sources": [
+              "https://calendar.google.com/calendar/ical/dionysoslinjeforening%40gmail.com/public/basic.ics"
+            ],
             "view": "month",
             "limit": 6,
             "showCategories": true,
@@ -163,10 +165,10 @@
           "animation": null,
           "frames": {
             "desktop": {
-              "x": 48.89,
-              "y": 240,
+              "x": 50,
+              "y": 302.5,
               "w": 40,
-              "h": 275,
+              "h": 67,
               "z": 3,
               "rot": 0
             },

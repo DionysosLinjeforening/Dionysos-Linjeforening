@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: /admin/
 
-Sitemap: https://urdweb.pages.dev/sitemap.xml
+Sitemap: https://dionysoslf.pages.dev/sitemap.xml
