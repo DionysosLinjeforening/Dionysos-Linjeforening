@@ -155,7 +155,7 @@
           "version": 1,
           "props": {
             "sources": [
-              "https://calendar.google.com/calendar/ical/dionysoslinjeforening%40gmail.com/public/basic.ics"
+              "https://calendar.google.com/calendar/embed?src=dionysoslinjeforening%40gmail.com&ctz=Europe%2FOslo"
             ],
             "view": "month",
             "limit": 6,
@@ -168,7 +168,7 @@
               "x": 50,
               "y": 302.5,
               "w": 40,
-              "h": 67,
+              "h": 137,
               "z": 3,
               "rot": 0
             },
